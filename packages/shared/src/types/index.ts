@@ -1,0 +1,34 @@
+/**
+ * Доменные строковые типы — единый словарь для backend и Mini App.
+ * Значения совпадают строка-в-строку с enum'ами Prisma, поэтому фронтенду
+ * не нужно импортировать @prisma/client.
+ */
+
+export const TaskStatus = {
+  PENDING: "PENDING",
+  COMPLETED: "COMPLETED",
+  SKIPPED: "SKIPPED",
+  POSTPONED: "POSTPONED",
+} as const;
+export type TaskStatus = (typeof TaskStatus)[keyof typeof TaskStatus];
+
+export const NotificationType = {
+  MORNING_PLAN: "MORNING_PLAN",
+  EVENING_REFLECTION: "EVENING_REFLECTION",
+  PET_REMINDER: "PET_REMINDER",
+  STREAK_WARNING: "STREAK_WARNING",
+  ACHIEVEMENT_UNLOCKED: "ACHIEVEMENT_UNLOCKED",
+  CUSTOM: "CUSTOM",
+} as const;
+export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
+
+export const NotificationStatus = {
+  PENDING: "PENDING",
+  SENT: "SENT",
+  FAILED: "FAILED",
+  SKIPPED: "SKIPPED",
+} as const;
+export type NotificationStatus = (typeof NotificationStatus)[keyof typeof NotificationStatus];
+
+/** Производная метка настроения питомца из числового значения 0..100. */
+export type PetMoodLabel = "happy" | "neutral" | "sad" | "tired";

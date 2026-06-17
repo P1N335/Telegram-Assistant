@@ -1,0 +1,57 @@
+# Telegram Productivity Companion — локальный / стартовый стек.
+# На старте backend поднимается в режиме RUN_MODE=all (один контейнер).
+# При росте: дублируем сервис backend с RUN_MODE=api|bot|worker и добавляем redis (profile "scale").
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tpc
+      POSTGRES_PASSWORD: tpc
+      POSTGRES_DB: tpc
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tpc -d tpc"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://tpc:tpc@postgres:5432/tpc?schema=public
+      RUN_MODE: all
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  miniapp:
+    build:
+      context: .
+      dockerfile: apps/miniapp/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+  # ── Опционально для масштабирования (docker compose --profile scale up) ──
+  redis:
+    image: redis:7-alpine
+    profiles: ["scale"]
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:

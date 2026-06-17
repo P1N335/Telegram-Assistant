@@ -1,0 +1,38 @@
+import type { PetDto } from "@tpc/shared";
+import { Card, ProgressBar } from "./ui.js";
+import { moodLabelRu } from "../lib/pet-view.js";
+
+export function PetCard({ pet, compact = false }: { pet: PetDto; compact?: boolean }) {
+  return (
+    <Card>
+      <div className="flex items-center gap-4">
+        <span className={compact ? "text-4xl" : "text-6xl"}>{pet.emoji}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between">
+            <p className="font-semibold">{pet.name}</p>
+            <span className="text-tg-hint text-xs">
+              ур. {pet.level} · {pet.stageTitle}
+            </span>
+          </div>
+          {!compact && <p className="text-tg-hint mt-0.5 text-sm italic">«{pet.phrase}»</p>}
+          <div className="mt-3 space-y-2">
+            <Stat label={`Настроение · ${moodLabelRu(pet.moodLabel)}`} value={pet.mood} />
+            <Stat label="Энергия" value={pet.energy} />
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <div className="text-tg-hint mb-1 flex justify-between text-xs">
+        <span>{label}</span>
+        <span>{value}%</span>
+      </div>
+      <ProgressBar value={value / 100} />
+    </div>
+  );
+}

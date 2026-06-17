@@ -1,0 +1,301 @@
+// Telegram Productivity Companion — схема данных.
+// Принципы под 100k+: денормализованные счётчики вынесены в отдельную UserStatistics
+// (горячие апдейты не лочат identity-строку User); ленивый decay питомца через
+// anchor-значения + lastInteractionAt (без cron-перебора); индексы под частые запросы;
+// расширяемость питомцев через таблицу PetSpecies (конфиг-данные).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────────────────────────────
+// Enums
+// ──────────────────────────────────────────────────────────────
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  SKIPPED
+  POSTPONED
+}
+
+enum NotificationType {
+  MORNING_PLAN
+  EVENING_REFLECTION
+  PET_REMINDER
+  STREAK_WARNING
+  ACHIEVEMENT_UNLOCKED
+  CUSTOM
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+// ──────────────────────────────────────────────────────────────
+// User — идентичность и настройки. Без горячих счётчиков (см. UserStatistics).
+// ──────────────────────────────────────────────────────────────
+
+model User {
+  id           String  @id @default(cuid())
+  telegramId   BigInt  @unique
+  username     String?
+  firstName    String?
+  lastName     String?
+  languageCode String?
+
+  // Персонализация расписания. timezone критичен: "утро" зависит от часового пояса.
+  timezone    String @default("Europe/Moscow")
+  morningHour Int? // переопределение глобального MORNING_HOUR
+  eveningHour Int?
+
+  isActive Boolean @default(true) // false = бот заблокирован/пользователь ушёл
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks         Task[]
+  dailyReports  DailyReport[]
+  pet           Pet?
+  statistics    UserStatistics?
+  achievements  UserAchievement[]
+  notifications Notification[]
+
+  // Выборка адресатов рассылки: активные пользователи в нужной таймзоне.
+  @@index([isActive, timezone])
+}
+
+// ──────────────────────────────────────────────────────────────
+// Task — задача дня.
+// ──────────────────────────────────────────────────────────────
+
+model Task {
+  id          String     @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  status      TaskStatus @default(PENDING)
+
+  planDate DateTime  @db.Date // день, к которому привязана задача (локальная дата пользователя)
+  dueDate  DateTime? // опциональный дедлайн с временем
+  order    Int       @default(0) // порядок в списке дня
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, planDate]) // "задачи на сегодня"
+  @@index([userId, status])
+}
+
+// ──────────────────────────────────────────────────────────────
+// DailyReport — вечерняя рефлексия (один отчёт на день).
+// ──────────────────────────────────────────────────────────────
+
+model DailyReport {
+  id     String   @id @default(cuid())
+  userId String
+  date   DateTime @db.Date
+
+  howWasDay    String? // Как прошёл день
+  goodThings   String? // Что хорошего произошло
+  difficulties String? // Что было сложным
+  summary      String? // Какие задачи выполнены / свободный итог
+
+  rating       Int // оценка дня 1..10
+  mood         Int? // настроение 1..10 (опционально, отдельно от rating)
+  productivity Int? // субъективная продуктивность 1..10
+
+  aiInsight String? // коучинг-инсайт от LLM (генерируется асинхронно)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+// ──────────────────────────────────────────────────────────────
+// UserStatistics — агрегированные счётчики (1:1). Обновляются на доменных событиях.
+// Вынесены из User, чтобы частые инкременты не конкурировали за identity-строку.
+// ──────────────────────────────────────────────────────────────
+
+model UserStatistics {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  // Прогрессия (геймификация)
+  xp            Int @default(0)
+  level         Int @default(1)
+  currentStreak Int @default(0)
+  longestStreak Int @default(0)
+
+  // Задачи
+  tasksCreated   Int @default(0)
+  tasksCompleted Int @default(0)
+  tasksSkipped   Int @default(0)
+  tasksPostponed Int @default(0)
+
+  // Активность / привычка
+  totalActiveDays  Int       @default(0)
+  plansCreated     Int       @default(0)
+  reflectionsDone  Int       @default(0)
+  lastPlanDate     DateTime? @db.Date
+  lastReflectDate  DateTime? @db.Date
+  lastActivityDate DateTime? @db.Date
+
+  // Самочувствие (скользящие средние, обновляются при рефлексии)
+  avgMood         Float?
+  avgProductivity Float?
+
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ──────────────────────────────────────────────────────────────
+// PetSpecies — каталог видов питомцев (конфиг/seed). Расширяемость под новых питомцев.
+// ──────────────────────────────────────────────────────────────
+
+model PetSpecies {
+  id          String  @id @default(cuid())
+  code        String  @unique // "cat", "dragon", ...
+  name        String
+  description String?
+
+  baseEnergy Int  @default(100)
+  isActive   Boolean @default(true)
+
+  // Стадии эволюции по уровню и набор реплик/эмодзи — как конфиг, чтобы не плодить таблицы.
+  // Пример: [{ "minLevel": 1, "emoji": "🥚", "title": "Яйцо" }, ...]
+  stages   Json
+  // Реплики по настроению: { "happy": [...], "sad": [...], "tired": [...] }
+  phrases  Json
+
+  pets Pet[]
+}
+
+// ──────────────────────────────────────────────────────────────
+// Pet — инстанс питомца пользователя (медленно меняющиеся данные).
+// ──────────────────────────────────────────────────────────────
+
+model Pet {
+  id        String @id @default(cuid())
+  userId    String @unique // один активный питомец на пользователя (можно расширить позже)
+  speciesId String
+  name      String
+
+  level Int @default(1)
+  xp    Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  species PetSpecies @relation(fields: [speciesId], references: [id])
+  state   PetState?
+
+  @@index([speciesId])
+}
+
+// ──────────────────────────────────────────────────────────────
+// PetState — мутабельное состояние (быстро меняется). Основа ленивого decay.
+// Храним anchor-значения + lastInteractionAt; текущее mood/energy считаем при чтении.
+// ──────────────────────────────────────────────────────────────
+
+model PetState {
+  id    String @id @default(cuid())
+  petId String @unique
+
+  // Зафиксированные ("якорные") значения на момент lastInteractionAt (0..100).
+  mood   Int @default(80)
+  energy Int @default(80)
+
+  lastInteractionAt DateTime @default(now()) // от него отсчитывается decay
+  updatedAt         DateTime @updatedAt
+
+  pet Pet @relation(fields: [petId], references: [id], onDelete: Cascade)
+}
+
+// ──────────────────────────────────────────────────────────────
+// Achievement — каталог достижений (seed).
+// ──────────────────────────────────────────────────────────────
+
+model Achievement {
+  id          String  @id @default(cuid())
+  code        String  @unique // "first_plan", "streak_7", "level_10", ...
+  title       String
+  description String
+  icon        String? // эмодзи
+  category    String? // "tasks" | "streak" | "level" | "pet" | "reflection"
+  threshold   Int? // порог критерия (дней streak, кол-во задач, уровень)
+  xpReward    Int     @default(0)
+  isActive    Boolean @default(true)
+
+  users UserAchievement[]
+}
+
+// ──────────────────────────────────────────────────────────────
+// UserAchievement — join: какие достижения разблокированы.
+// ──────────────────────────────────────────────────────────────
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+// ──────────────────────────────────────────────────────────────
+// Notification — учёт исходящих сообщений + идемпотентность рассылок.
+// dedupeKey (напр. "userId:morning:2026-06-14") гарантирует один утренний пинг в день.
+// ──────────────────────────────────────────────────────────────
+
+model Notification {
+  id     String           @id @default(cuid())
+  userId String
+  type   NotificationType
+  status NotificationStatus @default(PENDING)
+
+  dedupeKey   String?   @unique
+  scheduledFor DateTime?
+  sentAt      DateTime?
+  error       String?
+  payload     Json?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([status, scheduledFor]) // выборка готовых к отправке
+}
+
+// ──────────────────────────────────────────────────────────────
+// BotSession — состояние пошаговых диалогов (вечерняя рефлексия).
+// В БД, а не в памяти: переживает рестарт и работает при нескольких инстансах бота.
+// ──────────────────────────────────────────────────────────────
+
+model BotSession {
+  key       String   @id // ключ сессии grammY (chat id)
+  data      Json
+  updatedAt DateTime @updatedAt
+}
