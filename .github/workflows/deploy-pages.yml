@@ -1,8 +1,4 @@
 name: Deploy Mini App to GitHub Pages
-
-# Публикует только статичный фронт (apps/miniapp). Бэкенд (бот, API, БД)
-# деплоится отдельно — фронт ходит в него по VITE_API_BASE_URL.
-
 on:
   push:
     branches: [main]
@@ -27,13 +23,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Версию pnpm берём из package.json (поле packageManager) — не дублируем здесь,
+      # иначе action падает с ERR_PNPM_BAD_PM_VERSION.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile=false
