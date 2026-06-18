@@ -27,10 +27,11 @@ jobs:
       # иначе action падает с ERR_PNPM_BAD_PM_VERSION.
       - uses: pnpm/action-setup@v4
 
+      # Без cache: pnpm — он требует закоммиченный pnpm-lock.yaml.
+      # Когда добавишь lockfile (pnpm install → коммит), можно вернуть "cache: pnpm".
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
 
       - run: pnpm install --frozen-lockfile=false
 
