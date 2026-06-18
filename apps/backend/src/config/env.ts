@@ -25,6 +25,14 @@ const EnvSchema = z.object({
   JWT_SECRET: z.string().min(16),
   JWT_TTL: z.string().default("15m"),
 
+  // Разрешённые Origin'ы для кросс-доменного фронта (GitHub Pages и т.п.).
+  // Список через запятую; пусто = CORS выключен (same-origin). "*" = разрешить всем.
+  CORS_ORIGINS: z
+    .string()
+    .optional()
+    .default("")
+    .transform((s) => s.split(",").map((x) => x.trim()).filter(Boolean)),
+
   AI_PROVIDER: z.enum(["openai", "ollama", "noop"]).default("noop"),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),

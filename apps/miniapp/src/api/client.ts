@@ -7,7 +7,10 @@ import type {
 } from "@tpc/shared";
 import { getInitData } from "../lib/telegram.js";
 
-const BASE = "/api";
+// В dev — относительный "/api" (проксируется Vite). На GitHub Pages фронт статичен и
+// ходит на отдельный бэкенд: задаётся при сборке через VITE_API_BASE_URL (вкл. /api),
+// напр. https://your-backend.example.com/api
+const BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 /** JWT хранится в памяти страницы: Mini App переавторизуется при каждом открытии. */
 let token: string | null = null;

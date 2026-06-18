@@ -2,6 +2,7 @@ import express from "express";
 import pinoHttp from "pino-http";
 import type { AppContainer } from "../shared/di/container.js";
 import { createAuthMiddleware } from "../shared/http/auth.middleware.js";
+import { createCors } from "../shared/http/cors.js";
 import { errorHandler } from "../shared/http/error-handler.js";
 import { createAuthController } from "../modules/users/auth.controller.js";
 import { createUsersController } from "../modules/users/users.controller.js";
@@ -17,6 +18,7 @@ export async function startHttpRuntime(c: AppContainer): Promise<() => Promise<v
   const log = c.logger.child({ runtime: "http" });
   const app = express();
 
+  app.use(createCors(c.env.CORS_ORIGINS)); // до роутов: обрабатывает preflight
   app.use(express.json({ limit: "256kb" }));
   app.use(pinoHttp({ logger: log }));
 

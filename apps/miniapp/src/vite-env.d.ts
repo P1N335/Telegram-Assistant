@@ -1,5 +1,10 @@
 /// <reference types="vite/client" />
 
+interface ImportMetaEnv {
+  /** База API для прод-сборки (GitHub Pages). Должна включать /api. */
+  readonly VITE_API_BASE_URL?: string;
+}
+
 /** Минимальные типы официального Telegram WebApp SDK (telegram-web-app.js). */
 interface TelegramWebAppUser {
   id: number;

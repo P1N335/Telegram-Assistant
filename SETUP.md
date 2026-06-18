@@ -19,8 +19,8 @@
 Mini App грузится только по **HTTPS**.
 
 - **Прод:** размести фронт (`apps/miniapp`) на домене с HTTPS, укажи его в `.env` → `MINI_APP_URL`.
-- **Локально:** подними фронт (`pnpm dev:miniapp`, порт 5173) и пробрось его через туннель
-  (cloudflared / ngrok / localtunnel). Полученный `https://…`-URL → в `MINI_APP_URL`.
+- **Локально:** подними фронт (`pnpm dev:miniapp`, порт 5173) и пробрось его через ngrok
+  (см. `SELF-HOSTING.md`). Полученный `https://…`-URL → в `MINI_APP_URL`.
 
 Привязка кнопки приложения в BotFather:
 `/mybots` → твой бот → **Bot Settings → Menu Button → Configure menu button** → вставь `MINI_APP_URL`.

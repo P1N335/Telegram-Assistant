@@ -53,5 +53,22 @@ services:
     ports:
       - "6379:6379"
 
+  # ngrok — публикует backend наружу по HTTPS без проброса портов и белого IP.
+  # Включается отдельным профилем:  docker compose --profile tunnel up -d
+  # Требует NGROK_AUTHTOKEN (см. SELF-HOSTING.md). Веб-инспектор: http://localhost:4040
+  # Для постоянного адреса добавь свой статический домен:
+  #   command: ["http", "backend:3000", "--url=ВАШ-домен.ngrok-free.app"]
+  ngrok:
+    image: ngrok/ngrok:latest
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: ["http", "backend:3000"]
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    depends_on:
+      - backend
+    ports:
+      - "4040:4040"
+
 volumes:
   pgdata:

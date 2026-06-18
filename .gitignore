@@ -28,3 +28,4 @@ logs/
 # misc
 coverage/
 .cache/
+.env.example
