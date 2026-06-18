@@ -15,7 +15,7 @@ export function createCors(origins: string[]) {
       res.setHeader("Access-Control-Allow-Origin", wildcard ? "*" : origin);
       res.setHeader("Vary", "Origin");
       res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Authorization,Content-Type");
+      res.setHeader("Access-Control-Allow-Headers", "Authorization,Content-Type,ngrok-skip-browser-warning");
       res.setHeader("Access-Control-Max-Age", "86400");
     }
     if (req.method === "OPTIONS") {

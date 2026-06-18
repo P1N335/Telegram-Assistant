@@ -28,6 +28,8 @@ export class ApiError extends Error {
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
+  // Пропускаем interstitial-страницу бесплатного ngrok (иначе вместо JSON придёт HTML).
+  headers.set("ngrok-skip-browser-warning", "true");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const res = await fetch(`${BASE}${path}`, { ...init, headers });
