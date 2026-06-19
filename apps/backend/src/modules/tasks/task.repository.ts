@@ -25,7 +25,19 @@ export interface ITaskRepository {
   createMany(userId: string, period: TaskPeriod, planDate: Date, items: CreateTaskItem[]): Promise<Task[]>;
   createOne(userId: string, period: TaskPeriod, planDate: Date, data: CreateTaskData): Promise<TaskWithSubtasks>;
   findById(id: string): Promise<TaskWithSubtasks | null>;
+  /** Точный бакет (период + якорь) — для внутренней логики (идеальный день, рефлексия). */
   findByPeriod(userId: string, period: TaskPeriod, planDate: Date): Promise<TaskWithSubtasks[]>;
+  /**
+   * Видимость во вкладке периода (date-driven каскад):
+   * задачи с dueDate в [start, end) ИЛИ задачи без даты из бакета (period + anchor).
+   */
+  findForView(
+    userId: string,
+    period: TaskPeriod,
+    start: Date,
+    end: Date,
+    anchor: Date,
+  ): Promise<TaskWithSubtasks[]>;
   countForPeriod(userId: string, period: TaskPeriod, planDate: Date): Promise<number>;
   updateStatus(id: string, status: TaskStatus, completedAt: Date | null, markXpAwarded: boolean): Promise<Task>;
   updateTask(id: string, data: { title?: string; dueDate?: Date | null }): Promise<Task>;

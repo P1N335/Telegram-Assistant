@@ -61,3 +61,77 @@ export function periodAnchor(period: Period, localDate: string): Date {
       return toDateOnly(localDate);
   }
 }
+
+// ── Диапазон периода как абсолютные UTC-инстанты (для фильтра по dueDate) ──
+
+function addDaysStr(dateStr: string, days: number): string {
+  const d = new Date(`${dateStr}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function mondayStr(dateStr: string): string {
+  return periodAnchor("WEEK", dateStr).toISOString().slice(0, 10);
+}
+
+/** Смещение таймзоны (минуты) для конкретного инстанта. */
+function tzOffsetMinutes(timezone: string, at: Date): number {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const p = Object.fromEntries(dtf.formatToParts(at).map((x) => [x.type, x.value]));
+  const asUtc = Date.UTC(+p.year!, +p.month! - 1, +p.day!, +p.hour!, +p.minute!, +p.second!);
+  return (asUtc - at.getTime()) / 60000;
+}
+
+/** Локальное «настенное» время (YYYY-MM-DDTHH:mm:ss) в таймзоне → UTC-инстант. */
+function zonedTimeToUtc(wallClock: string, timezone: string): Date {
+  const naive = new Date(`${wallClock}Z`);
+  const offset = tzOffsetMinutes(timezone, naive);
+  return new Date(naive.getTime() - offset * 60000);
+}
+
+/**
+ * Полуинтервал [start, end) периода, содержащего localDate, в виде UTC-инстантов —
+ * границы соответствуют локальной полуночи пользователя. Используется для фильтра dueDate.
+ */
+export function periodRange(period: Period, timezone: string, localDate: string): { start: Date; end: Date } {
+  const [y, m] = localDate.split("-").map(Number) as [number, number, number];
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  let startStr: string;
+  let endStr: string;
+  switch (period) {
+    case "WEEK": {
+      startStr = mondayStr(localDate);
+      endStr = addDaysStr(startStr, 7);
+      break;
+    }
+    case "MONTH": {
+      startStr = `${y}-${pad(m)}-01`;
+      endStr = m === 12 ? `${y + 1}-01-01` : `${y}-${pad(m + 1)}-01`;
+      break;
+    }
+    case "YEAR": {
+      startStr = `${y}-01-01`;
+      endStr = `${y + 1}-01-01`;
+      break;
+    }
+    default: {
+      startStr = localDate;
+      endStr = addDaysStr(localDate, 1);
+    }
+  }
+
+  return {
+    start: zonedTimeToUtc(`${startStr}T00:00:00`, timezone),
+    end: zonedTimeToUtc(`${endStr}T00:00:00`, timezone),
+  };
+}

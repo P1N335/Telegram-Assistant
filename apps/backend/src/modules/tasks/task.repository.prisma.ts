@@ -55,6 +55,26 @@ export class PrismaTaskRepository implements ITaskRepository {
     });
   }
 
+  findForView(
+    userId: string,
+    period: TaskPeriod,
+    start: Date,
+    end: Date,
+    anchor: Date,
+  ): Promise<TaskWithSubtasks[]> {
+    return this.prisma.task.findMany({
+      where: {
+        userId,
+        OR: [
+          { dueDate: { gte: start, lt: end } }, // задачи с датой в этом периоде
+          { dueDate: null, period, planDate: anchor }, // задачи без даты — из своего бакета
+        ],
+      },
+      orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { order: "asc" }, { createdAt: "asc" }],
+      include: { subtasks: SUBTASK_ORDER },
+    });
+  }
+
   countForPeriod(userId: string, period: TaskPeriod, planDate: Date): Promise<number> {
     return this.prisma.task.count({ where: { userId, period, planDate } });
   }

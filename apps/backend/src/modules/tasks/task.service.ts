@@ -9,7 +9,7 @@ import {
   type UpdateTaskRequest,
 } from "@tpc/shared";
 import { ForbiddenError, NotFoundError, ValidationError } from "../../shared/errors/index.js";
-import { getLocalDateString, periodAnchor, toDateOnly } from "../../shared/time.js";
+import { getLocalDateString, periodAnchor, periodRange } from "../../shared/time.js";
 import type { EventBus } from "../../shared/events/event-bus.js";
 import type { IUserRepository } from "../users/user.repository.js";
 import type { ITaskRepository, TaskWithSubtasks } from "./task.repository.js";
@@ -84,8 +84,12 @@ export class TaskService {
   async listForPeriod(userId: string, period: TaskPeriod, dateStr?: string): Promise<TaskDto[]> {
     const user = await this.users.findById(userId);
     if (!user) throw new NotFoundError("Пользователь не найден");
-    const anchor = periodAnchor(period, dateStr ?? getLocalDateString(user.timezone));
-    const rows = await this.tasks.findByPeriod(userId, period, anchor);
+
+    const refDate = dateStr ?? getLocalDateString(user.timezone);
+    const anchor = periodAnchor(period, refDate); // бакет для задач без даты
+    const { start, end } = periodRange(period, user.timezone, refDate); // диапазон для задач с датой
+
+    const rows = await this.tasks.findForView(userId, period, start, end, anchor);
     return rows.map((r) => TaskService.toDto(r, r.subtasks));
   }
 
