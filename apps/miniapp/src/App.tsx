@@ -5,6 +5,7 @@ import { initTelegram, isInsideTelegram } from "./lib/telegram.js";
 import { BottomNav, type Tab } from "./components/BottomNav.js";
 import { Loader, ErrorState } from "./components/ui.js";
 import { HomeScreen } from "./screens/HomeScreen.js";
+import { TasksScreen } from "./screens/TasksScreen.js";
 import { StatsScreen } from "./screens/StatsScreen.js";
 import { PetScreen } from "./screens/PetScreen.js";
 
@@ -82,10 +83,11 @@ export function App() {
         {tab === "home" && (
           <HomeScreen data={data} onStatus={handleStatus} onPlan={handlePlan} busy={busy} />
         )}
+        {tab === "tasks" && <TasksScreen onChanged={refresh} />}
         {tab === "stats" && <StatsScreen data={data} />}
         {tab === "pet" && <PetScreen data={data} />}
       </main>
-      <BottomNav active={tab} onChange={setTab} />
+      <BottomNav active={tab} onChange={(t) => (t === "home" ? (setTab(t), void refresh()) : setTab(t))} />
     </div>
   );
 }

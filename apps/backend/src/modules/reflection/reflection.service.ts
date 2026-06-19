@@ -1,5 +1,5 @@
 import type { DailyReport } from "@tpc/database";
-import { TaskStatus } from "@tpc/shared";
+import { TaskStatus, TaskPeriod } from "@tpc/shared";
 import { NotFoundError } from "../../shared/errors/index.js";
 import type { Logger } from "../../shared/logger.js";
 import { getLocalDateString, toDateOnly } from "../../shared/time.js";
@@ -50,7 +50,7 @@ export class ReflectionService {
     let insight: string | null = null;
     if (this.ai.name !== "noop") {
       try {
-        const dayTasks = await this.tasks.findByDay(userId, date);
+        const dayTasks = await this.tasks.findByPeriod(userId, TaskPeriod.DAY, date);
         const text = await this.ai.generateCoaching({
           howWasDay: data.howWasDay,
           goodThings: data.goodThings,

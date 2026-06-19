@@ -26,10 +26,18 @@ enum TaskStatus {
   POSTPONED
 }
 
+enum TaskPeriod {
+  DAY
+  WEEK
+  MONTH
+  YEAR
+}
+
 enum NotificationType {
   MORNING_PLAN
   EVENING_REFLECTION
   PET_REMINDER
+  TASK_REMINDER
   STREAK_WARNING
   ACHIEVEMENT_UNLOCKED
   CUSTOM
@@ -85,21 +93,46 @@ model Task {
   title       String
   description String?
   status      TaskStatus @default(PENDING)
+  period      TaskPeriod @default(DAY) // день/неделя/месяц/год
 
-  planDate DateTime  @db.Date // день, к которому привязана задача (локальная дата пользователя)
-  dueDate  DateTime? // опциональный дедлайн с временем
-  order    Int       @default(0) // порядок в списке дня
+  // Якорь периода (локальная дата): день — сам день, неделя — понедельник,
+  // месяц — 1-е число, год — 1 января.
+  planDate DateTime  @db.Date
+  dueDate  DateTime? // опциональный дедлайн с датой и временем
+  order    Int       @default(0)
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  completedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  completedAt    DateTime?
   // XP за выполнение начисляется один раз за всю жизнь задачи (анти-фарм по галочке).
-  xpAwarded   Boolean   @default(false)
+  xpAwarded      Boolean   @default(false)
+  // Метка отправленного напоминания за час до дедлайна (чтобы не слать повторно).
+  reminderSentAt DateTime?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subtasks Subtask[]
 
-  @@index([userId, planDate]) // "задачи на сегодня"
+  @@index([userId, period, planDate]) // список задач периода
   @@index([userId, status])
+  @@index([dueDate]) // выборка для напоминаний
+}
+
+// ──────────────────────────────────────────────────────────────
+// Subtask — лёгкий чек-лист внутри задачи.
+// ──────────────────────────────────────────────────────────────
+
+model Subtask {
+  id        String   @id @default(cuid())
+  taskId    String
+  title     String
+  isDone    Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
 }
 
 // ──────────────────────────────────────────────────────────────

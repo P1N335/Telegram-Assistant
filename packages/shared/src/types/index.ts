@@ -12,10 +12,19 @@ export const TaskStatus = {
 } as const;
 export type TaskStatus = (typeof TaskStatus)[keyof typeof TaskStatus];
 
+export const TaskPeriod = {
+  DAY: "DAY",
+  WEEK: "WEEK",
+  MONTH: "MONTH",
+  YEAR: "YEAR",
+} as const;
+export type TaskPeriod = (typeof TaskPeriod)[keyof typeof TaskPeriod];
+
 export const NotificationType = {
   MORNING_PLAN: "MORNING_PLAN",
   EVENING_REFLECTION: "EVENING_REFLECTION",
   PET_REMINDER: "PET_REMINDER",
+  TASK_REMINDER: "TASK_REMINDER",
   STREAK_WARNING: "STREAK_WARNING",
   ACHIEVEMENT_UNLOCKED: "ACHIEVEMENT_UNLOCKED",
   CUSTOM: "CUSTOM",

@@ -2,8 +2,12 @@ import type {
   ApiErrorResponse,
   HomeResponse,
   TaskDto,
+  SubtaskDto,
+  TaskPeriod,
   TelegramAuthResponse,
   PlanDayRequest,
+  CreateTaskRequest,
+  UpdateTaskRequest,
 } from "@tpc/shared";
 import { getInitData } from "../lib/telegram.js";
 
@@ -45,6 +49,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
     throw new ApiError(res.status, code, message);
   }
+  if (res.status === 204) return undefined as T; // нет тела (DELETE)
   return (await res.json()) as T;
 }
 
@@ -60,13 +65,28 @@ export async function authenticate(): Promise<TelegramAuthResponse> {
 
 export const api = {
   getHome: () => request<HomeResponse>("/home"),
-  getTasks: (date?: string) =>
-    request<{ tasks: TaskDto[] }>(`/tasks${date ? `?date=${date}` : ""}`),
+
+  getTasks: (period: TaskPeriod, date?: string) =>
+    request<{ tasks: TaskDto[] }>(`/tasks?period=${period}${date ? `&date=${date}` : ""}`),
   planDay: (body: PlanDayRequest) =>
     request<{ tasks: TaskDto[] }>("/tasks/plan", { method: "POST", body: JSON.stringify(body) }),
+  createTask: (body: CreateTaskRequest) =>
+    request<{ task: TaskDto }>("/tasks", { method: "POST", body: JSON.stringify(body) }),
+  updateTask: (id: string, body: UpdateTaskRequest) =>
+    request<{ task: TaskDto }>(`/tasks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteTask: (id: string) => request<void>(`/tasks/${id}`, { method: "DELETE" }),
   setTaskStatus: (id: string, status: TaskDto["status"]) =>
     request<{ task: TaskDto }>(`/tasks/${id}/status`, {
       method: "PATCH",
       body: JSON.stringify({ status }),
     }),
+
+  addSubtask: (taskId: string, title: string) =>
+    request<{ subtask: SubtaskDto }>(`/tasks/${taskId}/subtasks`, {
+      method: "POST",
+      body: JSON.stringify({ title }),
+    }),
+  updateSubtask: (id: string, body: { title?: string; isDone?: boolean }) =>
+    request<{ subtask: SubtaskDto }>(`/subtasks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteSubtask: (id: string) => request<void>(`/subtasks/${id}`, { method: "DELETE" }),
 };

@@ -1,8 +1,9 @@
 import type { User } from "@tpc/database";
 import type { Env } from "../../config/env.js";
 import type { Logger } from "../../shared/logger.js";
-import { getLocalDateString, getLocalHour } from "../../shared/time.js";
+import { getLocalDateString, getLocalHour, getLocalTimeString } from "../../shared/time.js";
 import type { IUserRepository } from "../users/user.repository.js";
+import type { ITaskRepository } from "../tasks/task.repository.js";
 import type { NotificationService } from "../notifications/notification.service.js";
 import { morningKeyboard, eveningKeyboard } from "../bot/keyboards.js";
 import { TEXT } from "../bot/text.js";
@@ -18,6 +19,7 @@ type Kind = "morning" | "evening";
 export class SchedulerService {
   constructor(
     private readonly users: IUserRepository,
+    private readonly tasks: ITaskRepository,
     private readonly notifications: NotificationService,
     private readonly env: Env,
     private readonly logger: Logger,
@@ -26,6 +28,31 @@ export class SchedulerService {
   async tick(now: Date = new Date()): Promise<void> {
     await this.run("morning", now);
     await this.run("evening", now);
+  }
+
+  /**
+   * Напоминания о дедлайнах: задачи, у которых дедлайн в ближайшие 60 минут,
+   * ещё не выполнены и без отметки напоминания. Шлём один раз (dedupeKey + reminderSentAt).
+   */
+  async runReminders(now: Date = new Date()): Promise<void> {
+    const to = new Date(now.getTime() + 60 * 60 * 1000);
+    const due = await this.tasks.findDueForReminder(now, to);
+    if (due.length === 0) return;
+
+    this.logger.info({ count: due.length }, "Планировщик: напоминания о дедлайнах");
+
+    for (const task of due) {
+      if (!task.dueDate) continue;
+      const time = getLocalTimeString(task.user.timezone, task.dueDate);
+      const sent = await this.notifications.sendOnce({
+        userId: task.userId,
+        chatId: Number(task.user.telegramId),
+        type: "TASK_REMINDER",
+        dedupeKey: `task:${task.id}:reminder`,
+        text: `⏰ Скоро дедлайн (в ${time}): ${task.title}`,
+      });
+      if (sent) await this.tasks.markReminderSent(task.id);
+    }
   }
 
   private async run(kind: Kind, now: Date): Promise<void> {

@@ -58,7 +58,13 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
     logger,
   );
   const notificationService = new NotificationService(notificationRepository, sender, logger);
-  const schedulerService = new SchedulerService(userRepository, notificationService, env, logger);
+  const schedulerService = new SchedulerService(
+    userRepository,
+    taskRepository,
+    notificationService,
+    env,
+    logger,
+  );
   const gamificationService = new GamificationService(gamificationRepository, achievementRepository, logger);
   const petService = new PetService(petRepository, "cat");
 

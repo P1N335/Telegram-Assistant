@@ -7,6 +7,7 @@ import { errorHandler } from "../shared/http/error-handler.js";
 import { createAuthController } from "../modules/users/auth.controller.js";
 import { createUsersController } from "../modules/users/users.controller.js";
 import { createTasksController } from "../modules/tasks/tasks.controller.js";
+import { createSubtasksController } from "../modules/tasks/subtasks.controller.js";
 import { createPetController } from "../modules/pet/pet.controller.js";
 import { createHomeController } from "../shared/http/home.controller.js";
 
@@ -31,6 +32,7 @@ export async function startHttpRuntime(c: AppContainer): Promise<() => Promise<v
   const auth = createAuthMiddleware(c.services.auth);
   app.use("/api/users", auth, createUsersController(c.services.users));
   app.use("/api/tasks", auth, createTasksController(c.services.tasks));
+  app.use("/api/subtasks", auth, createSubtasksController(c.services.tasks));
   app.use("/api/pet", auth, createPetController(c.services.pet));
   app.use("/api/home", auth, createHomeController(c.services.users, c.services.tasks, c.services.pet));
 

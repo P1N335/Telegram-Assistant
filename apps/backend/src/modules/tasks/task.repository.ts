@@ -1,4 +1,4 @@
-import type { Task, TaskStatus } from "@tpc/database";
+import type { Subtask, Task, TaskPeriod, TaskStatus } from "@tpc/database";
 
 export interface CreateTaskItem {
   title: string;
@@ -6,17 +6,39 @@ export interface CreateTaskItem {
   order: number;
 }
 
-/** Контракт доступа к задачам (DIP). Реализация — PrismaTaskRepository. */
+export interface CreateTaskData {
+  title: string;
+  description?: string | null;
+  dueDate?: Date | null;
+  order: number;
+  subtaskTitles?: string[];
+}
+
+export type TaskWithSubtasks = Task & { subtasks: Subtask[] };
+
+/** Задача с минимумом полей пользователя — для рассылки напоминаний. */
+export type ReminderTask = Task & { user: { telegramId: bigint; timezone: string } };
+
+/** Контракт доступа к задачам и подзадачам (DIP). */
 export interface ITaskRepository {
-  createMany(userId: string, planDate: Date, items: CreateTaskItem[]): Promise<Task[]>;
-  findById(id: string): Promise<Task | null>;
-  findByDay(userId: string, planDate: Date): Promise<Task[]>;
-  countForDay(userId: string, planDate: Date): Promise<number>;
-  updateStatus(
-    id: string,
-    status: TaskStatus,
-    completedAt: Date | null,
-    markXpAwarded: boolean,
-  ): Promise<Task>;
+  // Задачи
+  createMany(userId: string, period: TaskPeriod, planDate: Date, items: CreateTaskItem[]): Promise<Task[]>;
+  createOne(userId: string, period: TaskPeriod, planDate: Date, data: CreateTaskData): Promise<TaskWithSubtasks>;
+  findById(id: string): Promise<TaskWithSubtasks | null>;
+  findByPeriod(userId: string, period: TaskPeriod, planDate: Date): Promise<TaskWithSubtasks[]>;
+  countForPeriod(userId: string, period: TaskPeriod, planDate: Date): Promise<number>;
+  updateStatus(id: string, status: TaskStatus, completedAt: Date | null, markXpAwarded: boolean): Promise<Task>;
+  updateTask(id: string, data: { title?: string; dueDate?: Date | null }): Promise<Task>;
   delete(id: string): Promise<void>;
+
+  // Напоминания
+  findDueForReminder(from: Date, to: Date): Promise<ReminderTask[]>;
+  markReminderSent(id: string): Promise<void>;
+
+  // Подзадачи
+  createSubtask(taskId: string, title: string, order: number): Promise<Subtask>;
+  updateSubtask(id: string, data: { title?: string; isDone?: boolean }): Promise<Subtask>;
+  deleteSubtask(id: string): Promise<void>;
+  countSubtasks(taskId: string): Promise<number>;
+  findSubtaskOwner(id: string): Promise<{ userId: string } | null>;
 }

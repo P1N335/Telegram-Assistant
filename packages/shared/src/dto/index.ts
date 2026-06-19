@@ -1,6 +1,13 @@
-import type { TaskStatus, PetMoodLabel } from "../types/index.js";
+import type { TaskStatus, TaskPeriod, PetMoodLabel } from "../types/index.js";
 
 /** Контракты REST API между backend и Mini App. */
+
+export interface SubtaskDto {
+  id: string;
+  title: string;
+  isDone: boolean;
+  order: number;
+}
 
 export interface PetDto {
   name: string;
@@ -39,10 +46,12 @@ export interface TaskDto {
   title: string;
   description: string | null;
   status: TaskStatus;
-  planDate: string; // YYYY-MM-DD
+  period: TaskPeriod;
+  planDate: string; // YYYY-MM-DD (якорь периода)
   dueDate: string | null; // ISO
   order: number;
   completedAt: string | null; // ISO
+  subtasks: SubtaskDto[];
 }
 
 // ── Requests / Responses ──────────────────────────────────────
@@ -67,6 +76,34 @@ export interface PlanDayRequest {
 
 export interface UpdateTaskStatusRequest {
   status: TaskStatus;
+}
+
+/** Создание одиночной задачи из Mini App. */
+export interface CreateTaskRequest {
+  title: string;
+  description?: string;
+  period: TaskPeriod;
+  /** Дедлайн (ISO с временем). */
+  dueDate?: string | null;
+  /** Опорная дата для якоря периода (YYYY-MM-DD); по умолчанию — сегодня. */
+  date?: string;
+  /** Заголовки подзадач. */
+  subtasks?: string[];
+}
+
+/** Частичное редактирование задачи. */
+export interface UpdateTaskRequest {
+  title?: string;
+  dueDate?: string | null;
+}
+
+export interface CreateSubtaskRequest {
+  title: string;
+}
+
+export interface UpdateSubtaskRequest {
+  title?: string;
+  isDone?: boolean;
 }
 
 export interface HomeResponse {
