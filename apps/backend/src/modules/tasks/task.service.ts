@@ -61,8 +61,10 @@ export class TaskService {
     if (task.userId !== userId) throw new ForbiddenError("Чужая задача");
 
     const previousStatus = task.status as TaskStatus;
+    // Первое в жизни задачи выполнение — единственный момент начисления XP.
+    const firstCompletion = status === TaskStatus.COMPLETED && !task.xpAwarded;
     const completedAt = status === TaskStatus.COMPLETED ? new Date() : null;
-    const updated = await this.tasks.updateStatus(taskId, status, completedAt);
+    const updated = await this.tasks.updateStatus(taskId, status, completedAt, firstCompletion);
 
     const localDate = task.planDate.toISOString().slice(0, 10);
     await this.events.emit({
@@ -72,10 +74,12 @@ export class TaskService {
       taskId,
       status,
       previousStatus,
+      firstCompletion,
     });
 
-    // Полностью выполненный день → отдельная награда (один раз — гард по previousStatus).
-    if (status === TaskStatus.COMPLETED && previousStatus !== TaskStatus.COMPLETED) {
+    // Полностью выполненный день → награда. Гард по firstCompletion, чтобы не начислять
+    // повторно при переснятии/повторной отметке галочки.
+    if (firstCompletion) {
       const dayTasks = await this.tasks.findByDay(userId, task.planDate);
       if (dayTasks.length > 0 && dayTasks.every((t) => t.status === TaskStatus.COMPLETED)) {
         await this.events.emit({ type: "DayCompleted", userId, localDate });

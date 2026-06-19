@@ -18,6 +18,8 @@ export interface TaskStatusChangedEvent {
   taskId: string;
   status: TaskStatus;
   previousStatus: TaskStatus;
+  /** true только при первом в жизни задачи переходе в COMPLETED (анти-фарм). */
+  firstCompletion: boolean;
 }
 
 export interface ReflectionSubmittedEvent {

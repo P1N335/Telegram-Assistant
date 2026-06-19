@@ -12,6 +12,11 @@ export interface ITaskRepository {
   findById(id: string): Promise<Task | null>;
   findByDay(userId: string, planDate: Date): Promise<Task[]>;
   countForDay(userId: string, planDate: Date): Promise<number>;
-  updateStatus(id: string, status: TaskStatus, completedAt: Date | null): Promise<Task>;
+  updateStatus(
+    id: string,
+    status: TaskStatus,
+    completedAt: Date | null,
+    markXpAwarded: boolean,
+  ): Promise<Task>;
   delete(id: string): Promise<void>;
 }

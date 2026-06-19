@@ -32,8 +32,16 @@ export class PrismaTaskRepository implements ITaskRepository {
     return this.prisma.task.count({ where: { userId, planDate } });
   }
 
-  updateStatus(id: string, status: TaskStatus, completedAt: Date | null): Promise<Task> {
-    return this.prisma.task.update({ where: { id }, data: { status, completedAt } });
+  updateStatus(
+    id: string,
+    status: TaskStatus,
+    completedAt: Date | null,
+    markXpAwarded: boolean,
+  ): Promise<Task> {
+    return this.prisma.task.update({
+      where: { id },
+      data: { status, completedAt, ...(markXpAwarded ? { xpAwarded: true } : {}) },
+    });
   }
 
   async delete(id: string): Promise<void> {

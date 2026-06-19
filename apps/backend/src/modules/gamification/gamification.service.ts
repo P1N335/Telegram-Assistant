@@ -90,9 +90,12 @@ export class GamificationService {
         break;
       }
       case "TaskStatusChanged": {
-        if (event.status === TaskStatus.COMPLETED && event.previousStatus !== TaskStatus.COMPLETED) {
-          patch.incTasksCompleted = 1;
-          baseXp += XP_REWARDS.TASK_COMPLETED;
+        if (event.status === TaskStatus.COMPLETED) {
+          // Начисляем только за первое выполнение задачи (анти-фарм по галочке).
+          if (event.firstCompletion) {
+            patch.incTasksCompleted = 1;
+            baseXp += XP_REWARDS.TASK_COMPLETED;
+          }
         } else if (event.status === TaskStatus.SKIPPED && event.previousStatus !== TaskStatus.SKIPPED) {
           patch.incTasksSkipped = 1;
         } else if (event.status === TaskStatus.POSTPONED && event.previousStatus !== TaskStatus.POSTPONED) {

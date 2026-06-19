@@ -22,7 +22,7 @@ export function registerPet(bus: EventBus, pet: PetService, logger: Logger): voi
   bus.on("ReflectionSubmitted", (e) => safe(pet.reward(e.userId, REWARDS.reflection)));
   bus.on("DayCompleted", (e) => safe(pet.reward(e.userId, REWARDS.dayComplete)));
   bus.on("TaskStatusChanged", (e) => {
-    if (e.status === TaskStatus.COMPLETED && e.previousStatus !== TaskStatus.COMPLETED) {
+    if (e.status === TaskStatus.COMPLETED && e.firstCompletion) {
       safe(pet.reward(e.userId, REWARDS.taskDone));
     }
   });
