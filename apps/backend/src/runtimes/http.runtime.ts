@@ -1,5 +1,5 @@
 import express from "express";
-import pinoHttp from "pino-http";
+import { pinoHttp } from "pino-http";
 import type { AppContainer } from "../shared/di/container.js";
 import { createAuthMiddleware } from "../shared/http/auth.middleware.js";
 import { createCors } from "../shared/http/cors.js";

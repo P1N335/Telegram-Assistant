@@ -1,5 +1,9 @@
 # Контекст сборки — корень монорепо (см. docker-compose.yml).
-FROM node:20-alpine AS base
+# Debian-slim (не alpine): движок Prisma совместим из коробки (glibc + openssl3).
+FROM node:20-slim AS base
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openssl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 WORKDIR /app
 
@@ -15,7 +19,7 @@ RUN pnpm install --frozen-lockfile=false
 FROM deps AS build
 COPY . .
 RUN pnpm --filter @tpc/shared build \
- && pnpm --filter @tpc/database generate \
+ && pnpm --filter @tpc/database build \
  && pnpm --filter @tpc/backend build
 
 # ── runtime ──────────────────────────────────────────────────

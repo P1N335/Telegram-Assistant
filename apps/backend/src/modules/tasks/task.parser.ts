@@ -25,8 +25,9 @@ export class TaskParser {
 
       let description: string | undefined;
       const sep = line.match(/\s+[—–-]\s+|:\s+/);
-      if (sep && sep.index !== undefined && sep.index > 0) {
-        description = line.slice(sep.index + sep[0].length).trim() || undefined;
+      const sepFull = sep?.[0];
+      if (sep && sepFull && sep.index !== undefined && sep.index > 0) {
+        description = line.slice(sep.index + sepFull.length).trim() || undefined;
         line = line.slice(0, sep.index).trim();
       }
 
