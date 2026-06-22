@@ -95,6 +95,8 @@ export const api = {
   getHabits: () => request<{ habits: HabitDto[] }>("/habits"),
   createHabit: (body: CreateHabitRequest) =>
     request<{ habit: HabitDto }>("/habits", { method: "POST", body: JSON.stringify(body) }),
+  updateHabit: (id: string, body: CreateHabitRequest) =>
+    request<{ habit: HabitDto }>(`/habits/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   completeHabit: (id: string) =>
     request<{ habit: HabitDto }>(`/habits/${id}/complete`, { method: "POST" }),
   deleteHabit: (id: string) => request<void>(`/habits/${id}`, { method: "DELETE" }),

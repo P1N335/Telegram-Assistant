@@ -1,4 +1,18 @@
-import type { TaskStatus, TaskPeriod, HabitCadence, PetMoodLabel } from "../types/index.js";
+import type {
+  TaskStatus,
+  TaskPeriod,
+  HabitCadence,
+  PetMoodLabel,
+  SubscriptionPlan,
+  PremiumFeature,
+} from "../types/index.js";
+
+export interface PremiumStatusDto {
+  plan: SubscriptionPlan;
+  active: boolean;
+  until: string | null; // ISO, null = бессрочно/нет
+  features: PremiumFeature[];
+}
 
 /** Контракты REST API между backend и Mini App. */
 
@@ -131,11 +145,15 @@ export interface CreateHabitRequest {
   xpPenalty?: number;
 }
 
+/** Редактирование привычки — полный набор полей (как при создании, без startDate). */
+export type UpdateHabitRequest = CreateHabitRequest;
+
 export interface HomeResponse {
   user: UserDto;
   statistics: StatisticsDto;
   tasks: TaskDto[];
   pet: PetDto;
+  premium: PremiumStatusDto;
 }
 
 export interface ApiErrorResponse {

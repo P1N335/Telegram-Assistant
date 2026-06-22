@@ -48,3 +48,15 @@ export type NotificationStatus = (typeof NotificationStatus)[keyof typeof Notifi
 
 /** Производная метка настроения питомца из числового значения 0..100. */
 export type PetMoodLabel = "happy" | "neutral" | "sad" | "tired";
+
+export const SubscriptionPlan = {
+  FREE: "FREE",
+  PREMIUM: "PREMIUM",
+} as const;
+export type SubscriptionPlan = (typeof SubscriptionPlan)[keyof typeof SubscriptionPlan];
+
+/** Реестр платных фич. Добавление новой механики = новая запись здесь. */
+export const PremiumFeature = {
+  PET_CUSTOMIZATION: "PET_CUSTOMIZATION",
+} as const;
+export type PremiumFeature = (typeof PremiumFeature)[keyof typeof PremiumFeature];

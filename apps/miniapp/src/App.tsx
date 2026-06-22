@@ -6,7 +6,6 @@ import { BottomNav, type Tab } from "./components/BottomNav.js";
 import { Loader, ErrorState } from "./components/ui.js";
 import { HomeScreen } from "./screens/HomeScreen.js";
 import { TasksScreen } from "./screens/TasksScreen.js";
-import { HabitsScreen } from "./screens/HabitsScreen.js";
 import { StatsScreen } from "./screens/StatsScreen.js";
 import { PetScreen } from "./screens/PetScreen.js";
 
@@ -82,10 +81,15 @@ export function App() {
     <div className="mx-auto flex min-h-full max-w-md flex-col">
       <main className="flex-1 pb-2">
         {tab === "home" && (
-          <HomeScreen data={data} onStatus={handleStatus} onPlan={handlePlan} busy={busy} />
+          <HomeScreen
+            data={data}
+            onStatus={handleStatus}
+            onPlan={handlePlan}
+            onChanged={refresh}
+            busy={busy}
+          />
         )}
         {tab === "tasks" && <TasksScreen onChanged={refresh} />}
-        {tab === "habits" && <HabitsScreen onChanged={refresh} />}
         {tab === "stats" && <StatsScreen data={data} />}
         {tab === "pet" && <PetScreen data={data} />}
       </main>

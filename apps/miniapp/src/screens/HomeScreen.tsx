@@ -4,15 +4,17 @@ import { levelProgress } from "@tpc/shared";
 import { Card, Chip, ProgressBar } from "../components/ui.js";
 import { TaskItem } from "../components/TaskItem.js";
 import { PetCard } from "../components/PetCard.js";
+import { HabitCircles } from "../components/HabitCircles.js";
 
 interface Props {
   data: HomeResponse;
   onStatus: (id: string, status: TaskDto["status"]) => void;
   onPlan: (text: string) => Promise<void>;
+  onChanged?: () => void;
   busy?: boolean;
 }
 
-export function HomeScreen({ data, onStatus, onPlan, busy }: Props) {
+export function HomeScreen({ data, onStatus, onPlan, onChanged, busy }: Props) {
   const { user, statistics, tasks } = data;
   const [draft, setDraft] = useState("");
 
@@ -44,6 +46,7 @@ export function HomeScreen({ data, onStatus, onPlan, busy }: Props) {
         <Chip icon="✨" label={`${statistics.xp} XP`} />
         <Chip icon="🔥" label={`${statistics.currentStreak} дней`} />
         <Chip icon="📈" label={`${Math.round(statistics.completionRate * 100)}%`} />
+        {data.premium.active && <Chip icon="⭐" label="Premium" />}
       </div>
 
       <Card>
@@ -65,6 +68,8 @@ export function HomeScreen({ data, onStatus, onPlan, busy }: Props) {
         </div>
         <ProgressBar value={dayProgress} />
       </Card>
+
+      <HabitCircles onChanged={onChanged} />
 
       <PetCard pet={data.pet} compact />
 

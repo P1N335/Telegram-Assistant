@@ -1,5 +1,10 @@
 import { Prisma, type Habit, type PrismaClient } from "@tpc/database";
-import type { CreateHabitData, HabitWithUser, IHabitRepository } from "./habit.repository.js";
+import type {
+  CreateHabitData,
+  HabitWithUser,
+  IHabitRepository,
+  UpdateHabitData,
+} from "./habit.repository.js";
 
 export class PrismaHabitRepository implements IHabitRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -14,6 +19,21 @@ export class PrismaHabitRepository implements IHabitRepository {
         intervalDays: data.intervalDays ?? null,
         weekdays: data.weekdays ?? [],
         startDate: data.startDate,
+        xpReward: data.xpReward,
+        xpPenalty: data.xpPenalty,
+      },
+    });
+  }
+
+  update(id: string, data: UpdateHabitData): Promise<Habit> {
+    return this.prisma.habit.update({
+      where: { id },
+      data: {
+        title: data.title,
+        timeOfDay: data.timeOfDay,
+        cadence: data.cadence,
+        intervalDays: data.intervalDays,
+        weekdays: data.weekdays,
         xpReward: data.xpReward,
         xpPenalty: data.xpPenalty,
       },

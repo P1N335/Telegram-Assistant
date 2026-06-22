@@ -39,6 +39,24 @@ enum HabitCadence {
   WEEKLY
 }
 
+enum SubscriptionPlan {
+  FREE
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIAL
+  EXPIRED
+  CANCELED
+}
+
+enum SubscriptionProvider {
+  MANUAL
+  TELEGRAM_STARS
+  STRIPE
+}
+
 enum NotificationType {
   MORNING_PLAN
   EVENING_REFLECTION
@@ -84,6 +102,7 @@ model User {
   dailyReports  DailyReport[]
   pet           Pet?
   statistics    UserStatistics?
+  subscription  Subscription?
   achievements  UserAchievement[]
   notifications Notification[]
 
@@ -182,6 +201,27 @@ model HabitCompletion {
   habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
 
   @@unique([habitId, date])
+}
+
+// ──────────────────────────────────────────────────────────────
+// Subscription — премиум-подписка (1:1). Отсутствие записи = FREE.
+// Доступ к платным фичам выводится из плана (см. PLAN_FEATURES в @tpc/shared).
+// ──────────────────────────────────────────────────────────────
+
+model Subscription {
+  id       String               @id @default(cuid())
+  userId   String               @unique
+  plan     SubscriptionPlan     @default(PREMIUM)
+  status   SubscriptionStatus   @default(ACTIVE)
+  provider SubscriptionProvider @default(MANUAL)
+
+  externalId       String? // id платежа/подписки у провайдера (на будущее)
+  currentPeriodEnd DateTime? // null = бессрочно
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ──────────────────────────────────────────────────────────────

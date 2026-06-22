@@ -38,6 +38,18 @@ export function createHabitsController(habitService: HabitService): Router {
     }),
   );
 
+  // PATCH /api/habits/:id — редактирование привычки
+  router.patch(
+    "/:id",
+    asyncHandler(async (req: AuthedRequest, res) => {
+      const userId = requireUserId(req);
+      const parsed = CreateSchema.safeParse(req.body);
+      if (!parsed.success) throw new ValidationError(parsed.error.issues[0]?.message);
+      const id = z.string().min(1).parse(req.params.id);
+      res.json({ habit: await habitService.updateHabit(userId, id, parsed.data) });
+    }),
+  );
+
   // POST /api/habits/:id/complete — отметить выполнение на сегодня
   router.post(
     "/:id/complete",

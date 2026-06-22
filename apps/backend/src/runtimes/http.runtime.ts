@@ -10,6 +10,8 @@ import { createTasksController } from "../modules/tasks/tasks.controller.js";
 import { createSubtasksController } from "../modules/tasks/subtasks.controller.js";
 import { createPetController } from "../modules/pet/pet.controller.js";
 import { createHabitsController } from "../modules/habits/habit.controller.js";
+import { createPremiumController } from "../modules/subscription/premium.controller.js";
+import { createAdminController } from "../modules/subscription/admin.controller.js";
 import { createHomeController } from "../shared/http/home.controller.js";
 
 /**
@@ -31,12 +33,23 @@ export async function startHttpRuntime(c: AppContainer): Promise<() => Promise<v
 
   // Защищённые роуты
   const auth = createAuthMiddleware(c.services.auth);
-  app.use("/api/users", auth, createUsersController(c.services.users));
+  app.use("/api/users", auth, createUsersController(c.services.users, c.services.entitlements));
   app.use("/api/tasks", auth, createTasksController(c.services.tasks));
   app.use("/api/subtasks", auth, createSubtasksController(c.services.tasks));
   app.use("/api/pet", auth, createPetController(c.services.pet));
   app.use("/api/habits", auth, createHabitsController(c.services.habits));
-  app.use("/api/home", auth, createHomeController(c.services.users, c.services.tasks, c.services.pet));
+  app.use("/api/premium", auth, createPremiumController(c.services.entitlements));
+  app.use(
+    "/api/home",
+    auth,
+    createHomeController(c.services.users, c.services.tasks, c.services.pet, c.services.entitlements),
+  );
+
+  // Admin (защита по x-admin-token внутри; выключено, если ADMIN_TOKEN не задан)
+  app.use(
+    "/api/admin",
+    createAdminController(c.services.entitlements, c.repositories.users, c.env.ADMIN_TOKEN),
+  );
 
   app.use(errorHandler(log));
 

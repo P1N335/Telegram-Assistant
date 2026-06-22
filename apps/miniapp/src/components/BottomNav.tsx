@@ -1,16 +1,15 @@
-export type Tab = "home" | "tasks" | "habits" | "stats" | "pet";
+export type Tab = "home" | "tasks" | "stats" | "pet";
 
 const TABS: Array<{ id: Tab; icon: string; label: string }> = [
   { id: "home", icon: "🏠", label: "Главная" },
   { id: "tasks", icon: "📋", label: "Задачи" },
-  { id: "habits", icon: "🔁", label: "Привычки" },
-  { id: "stats", icon: "📊", label: "Статы" },
+  { id: "stats", icon: "📊", label: "Статистика" },
   { id: "pet", icon: "🐾", label: "Питомец" },
 ];
 
 export function BottomNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   return (
-    <nav className="bg-tg-secondaryBg sticky bottom-0 grid grid-cols-5 border-t border-black/5">
+    <nav className="bg-tg-secondaryBg sticky bottom-0 grid grid-cols-4 border-t border-black/5">
       {TABS.map((t) => (
         <button
           key={t.id}

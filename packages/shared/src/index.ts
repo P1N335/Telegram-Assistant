@@ -15,3 +15,4 @@ export * from "./types/index.js";
 export * from "./dto/index.js";
 export * from "./config/leveling.js";
 export * from "./config/xp.js";
+export * from "./config/premium.js";

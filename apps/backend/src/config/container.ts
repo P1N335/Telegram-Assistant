@@ -25,6 +25,8 @@ import { PetService } from "../modules/pet/pet.service.js";
 import { registerPet } from "../modules/pet/register.js";
 import { PrismaHabitRepository } from "../modules/habits/habit.repository.prisma.js";
 import { HabitService } from "../modules/habits/habit.service.js";
+import { PrismaSubscriptionRepository } from "../modules/subscription/subscription.repository.prisma.js";
+import { EntitlementService } from "../modules/subscription/entitlement.service.js";
 
 /**
  * Composition root — единственное место связывания реализаций с сервисами через интерфейсы.
@@ -44,6 +46,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
   const achievementRepository = new PrismaAchievementRepository(prisma);
   const petRepository = new PrismaPetRepository(prisma);
   const habitRepository = new PrismaHabitRepository(prisma);
+  const subscriptionRepository = new PrismaSubscriptionRepository(prisma);
 
   // Infra
   const sender = new GrammyApiSender(env.TELEGRAM_BOT_TOKEN);
@@ -73,6 +76,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
   const gamificationService = new GamificationService(gamificationRepository, achievementRepository, logger);
   const petService = new PetService(petRepository, "cat");
   const habitService = new HabitService(habitRepository, userRepository, eventBus);
+  const entitlementService = new EntitlementService(subscriptionRepository);
 
   // Подписки на доменные события
   registerGamification(eventBus, gamificationService, {
@@ -97,6 +101,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
       achievements: achievementRepository,
       pet: petRepository,
       habits: habitRepository,
+      subscriptions: subscriptionRepository,
     },
     services: {
       auth: authService,
@@ -108,6 +113,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
       gamification: gamificationService,
       pet: petService,
       habits: habitService,
+      entitlements: entitlementService,
     },
   };
 }

@@ -11,10 +11,21 @@ export interface CreateHabitData {
   xpPenalty: number;
 }
 
+export interface UpdateHabitData {
+  title: string;
+  timeOfDay: string;
+  cadence: HabitCadence;
+  intervalDays: number | null;
+  weekdays: number[];
+  xpReward: number;
+  xpPenalty: number;
+}
+
 export type HabitWithUser = Habit & { user: { telegramId: bigint; timezone: string } };
 
 export interface IHabitRepository {
   create(userId: string, data: CreateHabitData): Promise<Habit>;
+  update(id: string, data: UpdateHabitData): Promise<Habit>;
   findById(id: string): Promise<Habit | null>;
   listActiveByUser(userId: string): Promise<Habit[]>;
   /** Все активные привычки с данными пользователя — для планировщика. */

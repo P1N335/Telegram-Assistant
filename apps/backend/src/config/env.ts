@@ -25,6 +25,9 @@ const EnvSchema = z.object({
   JWT_SECRET: z.string().min(16),
   JWT_TTL: z.string().default("15m"),
 
+  // Секрет для admin-эндпоинтов (выдача премиума). Пусто = админка выключена.
+  ADMIN_TOKEN: z.string().optional(),
+
   // Разрешённые Origin'ы для кросс-доменного фронта (GitHub Pages и т.п.).
   // Список через запятую; пусто = CORS выключен (same-origin). "*" = разрешить всем.
   CORS_ORIGINS: z

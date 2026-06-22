@@ -1,5 +1,5 @@
 import type { Habit } from "@tpc/database";
-import { HabitCadence, type HabitDto, type CreateHabitRequest } from "@tpc/shared";
+import { HabitCadence, type HabitDto, type CreateHabitRequest, type UpdateHabitRequest } from "@tpc/shared";
 import { ForbiddenError, NotFoundError, ValidationError } from "../../shared/errors/index.js";
 import { getLocalDateString, toDateOnly } from "../../shared/time.js";
 import { now } from "../../shared/clock.js";
@@ -21,30 +21,40 @@ export class HabitService {
     const user = await this.users.findById(userId);
     if (!user) throw new NotFoundError("Пользователь не найден");
 
-    const title = req.title.trim();
-    if (!title) throw new ValidationError("Пустой заголовок привычки");
-    if (!TIME_RE.test(req.timeOfDay)) throw new ValidationError("Время в формате ЧЧ:ММ");
-
-    if (req.cadence === HabitCadence.EVERY_N_DAYS && (!req.intervalDays || req.intervalDays < 1)) {
-      throw new ValidationError("Укажите интервал в днях (>= 1)");
-    }
-    if (req.cadence === HabitCadence.WEEKLY && (!req.weekdays || req.weekdays.length === 0)) {
-      throw new ValidationError("Выберите хотя бы один день недели");
-    }
-
+    const norm = HabitService.normalize(req);
     const today = getLocalDateString(user.timezone, now());
     const created = await this.habits.create(userId, {
-      title,
+      title: norm.title,
       timeOfDay: req.timeOfDay,
       cadence: req.cadence,
-      intervalDays: req.cadence === HabitCadence.EVERY_N_DAYS ? req.intervalDays : null,
-      weekdays: req.cadence === HabitCadence.WEEKLY ? [...new Set(req.weekdays)].sort() : [],
+      intervalDays: norm.intervalDays,
+      weekdays: norm.weekdays,
       startDate: toDateOnly(today),
       xpReward: req.xpReward ?? 5,
       xpPenalty: req.xpPenalty ?? 10,
     });
 
     return HabitService.toDto(created, isDueOn(toSchedule(created), today), false);
+  }
+
+  async updateHabit(userId: string, habitId: string, req: UpdateHabitRequest): Promise<HabitDto> {
+    const habit = await this.requireOwn(userId, habitId);
+    const user = await this.users.findById(userId);
+    const norm = HabitService.normalize(req);
+
+    const updated = await this.habits.update(habitId, {
+      title: norm.title,
+      timeOfDay: req.timeOfDay,
+      cadence: req.cadence,
+      intervalDays: norm.intervalDays,
+      weekdays: norm.weekdays,
+      xpReward: req.xpReward ?? habit.xpReward,
+      xpPenalty: req.xpPenalty ?? habit.xpPenalty,
+    });
+
+    const today = getLocalDateString(user!.timezone, now());
+    const done = await this.habits.hasCompletion(habitId, toDateOnly(today));
+    return HabitService.toDto(updated, isDueOn(toSchedule(updated), today), done);
   }
 
   async listForToday(userId: string): Promise<HabitDto[]> {
@@ -84,6 +94,24 @@ export class HabitService {
     if (!habit) throw new NotFoundError("Привычка не найдена");
     if (habit.userId !== userId) throw new ForbiddenError("Чужая привычка");
     return habit;
+  }
+
+  /** Валидация и нормализация полей расписания (общая для create/update). */
+  static normalize(req: CreateHabitRequest): { title: string; intervalDays: number | null; weekdays: number[] } {
+    const title = req.title.trim();
+    if (!title) throw new ValidationError("Пустой заголовок привычки");
+    if (!TIME_RE.test(req.timeOfDay)) throw new ValidationError("Время в формате ЧЧ:ММ");
+    if (req.cadence === HabitCadence.EVERY_N_DAYS && (!req.intervalDays || req.intervalDays < 1)) {
+      throw new ValidationError("Укажите интервал в днях (>= 1)");
+    }
+    if (req.cadence === HabitCadence.WEEKLY && (!req.weekdays || req.weekdays.length === 0)) {
+      throw new ValidationError("Выберите хотя бы один день недели");
+    }
+    return {
+      title,
+      intervalDays: req.cadence === HabitCadence.EVERY_N_DAYS ? req.intervalDays! : null,
+      weekdays: req.cadence === HabitCadence.WEEKLY ? [...new Set(req.weekdays)].sort((a, b) => a - b) : [],
+    };
   }
 
   static toDto(h: Habit, dueToday: boolean, doneToday: boolean): HabitDto {
