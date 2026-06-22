@@ -8,6 +8,8 @@ import type {
   PlanDayRequest,
   CreateTaskRequest,
   UpdateTaskRequest,
+  HabitDto,
+  CreateHabitRequest,
 } from "@tpc/shared";
 import { getInitData } from "../lib/telegram.js";
 
@@ -89,4 +91,11 @@ export const api = {
   updateSubtask: (id: string, body: { title?: string; isDone?: boolean }) =>
     request<{ subtask: SubtaskDto }>(`/subtasks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteSubtask: (id: string) => request<void>(`/subtasks/${id}`, { method: "DELETE" }),
+
+  getHabits: () => request<{ habits: HabitDto[] }>("/habits"),
+  createHabit: (body: CreateHabitRequest) =>
+    request<{ habit: HabitDto }>("/habits", { method: "POST", body: JSON.stringify(body) }),
+  completeHabit: (id: string) =>
+    request<{ habit: HabitDto }>(`/habits/${id}/complete`, { method: "POST" }),
+  deleteHabit: (id: string) => request<void>(`/habits/${id}`, { method: "DELETE" }),
 };

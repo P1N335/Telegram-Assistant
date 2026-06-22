@@ -23,6 +23,7 @@ export class PrismaGamificationRepository implements IGamificationRepository {
     inc("reflectionsDone", patch.incReflections);
     inc("totalActiveDays", patch.incTotalActiveDays);
 
+    if (patch.setXp !== undefined) data.xp = patch.setXp; // перезапись имеет приоритет
     if (patch.setLevel !== undefined) data.level = patch.setLevel;
     if (patch.setCurrentStreak !== undefined) data.currentStreak = patch.setCurrentStreak;
     if (patch.setLongestStreak !== undefined) data.longestStreak = patch.setLongestStreak;

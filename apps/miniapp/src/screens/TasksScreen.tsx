@@ -150,6 +150,7 @@ export function TasksScreen({ onChanged }: { onChanged?: () => void }) {
                 )
               }
               onDelete={(id) => run(() => api.deleteTask(id))}
+              onReschedule={(id, dueDate) => run(() => api.updateTask(id, { dueDate }))}
               onAddSubtask={(taskId, st) => run(() => api.addSubtask(taskId, st))}
               onToggleSubtask={(id, isDone) => run(() => api.updateSubtask(id, { isDone }))}
               onDeleteSubtask={(id) => run(() => api.deleteSubtask(id))}

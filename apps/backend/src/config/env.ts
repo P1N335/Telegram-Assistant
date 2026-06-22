@@ -42,6 +42,9 @@ const EnvSchema = z.object({
   DEFAULT_TIMEZONE: z.string().default("Europe/Moscow"),
   MORNING_HOUR: z.coerce.number().int().min(0).max(23).default(8),
   EVENING_HOUR: z.coerce.number().int().min(0).max(23).default(21),
+
+  // Сдвиг "текущего времени" в минутах (если часы хоста неверны). Напр. -180 = на 3 часа назад.
+  CLOCK_OFFSET_MINUTES: z.coerce.number().int().default(0),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

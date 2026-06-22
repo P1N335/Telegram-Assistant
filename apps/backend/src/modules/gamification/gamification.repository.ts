@@ -6,6 +6,7 @@ import type { UserStatistics } from "@tpc/database";
  */
 export interface StatsPatch {
   incXp?: number;
+  setXp?: number; // перезапись (для штрафа с клампом 0)
   incTasksCreated?: number;
   incTasksCompleted?: number;
   incTasksSkipped?: number;

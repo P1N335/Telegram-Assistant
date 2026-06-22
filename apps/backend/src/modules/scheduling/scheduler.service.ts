@@ -1,9 +1,20 @@
 import type { User } from "@tpc/database";
 import type { Env } from "../../config/env.js";
 import type { Logger } from "../../shared/logger.js";
-import { getLocalDateString, getLocalHour, getLocalTimeString } from "../../shared/time.js";
+import {
+  addLocalDays,
+  getLocalDateString,
+  getLocalHour,
+  getLocalTimeString,
+  localDateTimeToUtc,
+  toDateOnly,
+} from "../../shared/time.js";
+import { now as clockNow } from "../../shared/clock.js";
+import type { EventBus } from "../../shared/events/event-bus.js";
 import type { IUserRepository } from "../users/user.repository.js";
 import type { ITaskRepository } from "../tasks/task.repository.js";
+import type { IHabitRepository, HabitWithUser } from "../habits/habit.repository.js";
+import { isDueOn } from "../habits/habit.rules.js";
 import type { NotificationService } from "../notifications/notification.service.js";
 import { morningKeyboard, eveningKeyboard } from "../bot/keyboards.js";
 import { TEXT } from "../bot/text.js";
@@ -20,12 +31,14 @@ export class SchedulerService {
   constructor(
     private readonly users: IUserRepository,
     private readonly tasks: ITaskRepository,
+    private readonly habits: IHabitRepository,
     private readonly notifications: NotificationService,
+    private readonly events: EventBus,
     private readonly env: Env,
     private readonly logger: Logger,
   ) {}
 
-  async tick(now: Date = new Date()): Promise<void> {
+  async tick(now: Date = clockNow()): Promise<void> {
     await this.run("morning", now);
     await this.run("evening", now);
   }
@@ -34,7 +47,7 @@ export class SchedulerService {
    * Напоминания о дедлайнах: задачи, у которых дедлайн в ближайшие 60 минут,
    * ещё не выполнены и без отметки напоминания. Шлём один раз (dedupeKey + reminderSentAt).
    */
-  async runReminders(now: Date = new Date()): Promise<void> {
+  async runReminders(now: Date = clockNow()): Promise<void> {
     const to = new Date(now.getTime() + 60 * 60 * 1000);
     const due = await this.tasks.findDueForReminder(now, to);
     if (due.length === 0) return;
@@ -52,6 +65,74 @@ export class SchedulerService {
         text: `⏰ Скоро дедлайн (в ${time}): ${task.title}`,
       });
       if (sent) await this.tasks.markReminderSent(task.id);
+    }
+  }
+
+  /**
+   * Напоминания о привычках: за 15 минут до времени и повторно через час,
+   * если ещё не отмечена выполненной. Один раз каждое (dedupeKey по дню).
+   */
+  async runHabitReminders(now: Date = clockNow()): Promise<void> {
+    const habits = await this.habits.listAllActiveWithUser();
+    for (const habit of habits) {
+      const tz = habit.user.timezone;
+      const today = getLocalDateString(tz, now);
+      if (!isDueOn(scheduleOf(habit), today)) continue;
+      if (await this.habits.hasCompletion(habit.id, toDateOnly(today))) continue;
+
+      const scheduled = localDateTimeToUtc(today, habit.timeOfDay, tz).getTime();
+      const t = now.getTime();
+      const chatId = Number(habit.user.telegramId);
+
+      if (t >= scheduled - 15 * 60_000 && t < scheduled) {
+        await this.notifications.sendOnce({
+          userId: habit.userId,
+          chatId,
+          type: "HABIT_REMINDER",
+          dedupeKey: `habit:${habit.id}:r15:${today}`,
+          text: `⏰ Через 15 минут: ${habit.title} (в ${habit.timeOfDay})`,
+        });
+      } else if (t >= scheduled + 60 * 60_000) {
+        await this.notifications.sendOnce({
+          userId: habit.userId,
+          chatId,
+          type: "HABIT_REMINDER",
+          dedupeKey: `habit:${habit.id}:r60:${today}`,
+          text: `⏳ Не отмечено: ${habit.title}. Выполни и отметь в приложении.`,
+        });
+      }
+    }
+  }
+
+  /**
+   * Конец дня: для привычек, которые были должны вчера и не отмечены, —
+   * штраф один раз (dedupeKey по дню). Запускается в час локальной полуночи.
+   */
+  async runHabitRollover(now: Date = clockNow()): Promise<void> {
+    const habits = await this.habits.listAllActiveWithUser();
+    for (const habit of habits) {
+      const tz = habit.user.timezone;
+      if (getLocalHour(tz, now) !== 0) continue; // только в первый час новых суток
+
+      const yesterday = addLocalDays(getLocalDateString(tz, now), -1);
+      if (!isDueOn(scheduleOf(habit), yesterday)) continue;
+      if (await this.habits.hasCompletion(habit.id, toDateOnly(yesterday))) continue;
+
+      const penalized = await this.notifications.sendOnce({
+        userId: habit.userId,
+        chatId: Number(habit.user.telegramId),
+        type: "HABIT_REMINDER",
+        dedupeKey: `habit:${habit.id}:missed:${yesterday}`,
+        text: `😔 Привычка не выполнена: ${habit.title} (−${habit.xpPenalty} XP)`,
+      });
+      if (penalized) {
+        await this.events.emit({
+          type: "HabitMissed",
+          userId: habit.userId,
+          habitId: habit.id,
+          penalty: habit.xpPenalty,
+        });
+      }
     }
   }
 
@@ -93,6 +174,15 @@ export class SchedulerService {
       },
     });
   }
+}
+
+function scheduleOf(h: HabitWithUser) {
+  return {
+    cadence: h.cadence,
+    intervalDays: h.intervalDays,
+    weekdays: h.weekdays,
+    startDate: h.startDate.toISOString().slice(0, 10),
+  };
 }
 
 function safeLocalHour(tz: string, now: Date): number {

@@ -3,6 +3,7 @@ import { TaskStatus, TaskPeriod } from "@tpc/shared";
 import { NotFoundError } from "../../shared/errors/index.js";
 import type { Logger } from "../../shared/logger.js";
 import { getLocalDateString, toDateOnly } from "../../shared/time.js";
+import { now } from "../../shared/clock.js";
 import type { LLMProvider } from "../../shared/ai/llm-provider.js";
 import type { EventBus } from "../../shared/events/event-bus.js";
 import type { IUserRepository } from "../users/user.repository.js";
@@ -32,7 +33,7 @@ export class ReflectionService {
     const user = await this.users.findById(userId);
     if (!user) throw new NotFoundError("Пользователь не найден");
 
-    const day = dateStr ?? getLocalDateString(user.timezone);
+    const day = dateStr ?? getLocalDateString(user.timezone, now());
     const date = toDateOnly(day);
 
     // Сохраняем сразу — это источник правды, AI вторичен.

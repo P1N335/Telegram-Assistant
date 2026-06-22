@@ -1,5 +1,6 @@
 import { levelFromXp, type PetDto } from "@tpc/shared";
 import { NotFoundError } from "../../shared/errors/index.js";
+import { now as clockNow } from "../../shared/clock.js";
 import type { IPetRepository, PetWithRelations } from "./pet.repository.js";
 import { applyDecay, boost, pickPhrase, selectMoodLabel, stageFor } from "./pet.rules.js";
 
@@ -32,7 +33,7 @@ export class PetService {
   }
 
   /** Текущее состояние для UI (decay вычисляется на чтении, без записи в БД). */
-  async getView(userId: string, now: Date = new Date()): Promise<PetDto> {
+  async getView(userId: string, now: Date = clockNow()): Promise<PetDto> {
     const pet = await this.getOrCreate(userId);
     const state = pet.state ?? { mood: 80, energy: 80, lastInteractionAt: pet.createdAt };
     const current = applyDecay(state.mood, state.energy, state.lastInteractionAt, now);
@@ -43,7 +44,7 @@ export class PetService {
    * Награда за активность: материализуем decay до now, добавляем буст и опыт,
    * пересчитываем уровень, сбрасываем точку отсчёта decay.
    */
-  async reward(userId: string, reward: PetReward, now: Date = new Date()): Promise<void> {
+  async reward(userId: string, reward: PetReward, now: Date = clockNow()): Promise<void> {
     const pet = await this.getOrCreate(userId);
     const state = pet.state ?? { mood: 80, energy: 80, lastInteractionAt: pet.createdAt };
 

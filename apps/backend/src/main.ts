@@ -1,5 +1,6 @@
 import { loadEnv } from "./config/env.js";
 import { createLogger } from "./shared/logger.js";
+import { configureClock } from "./shared/clock.js";
 import { createContainer } from "./config/container.js";
 import { startHttpRuntime } from "./runtimes/http.runtime.js";
 import { startBotRuntime } from "./runtimes/bot.runtime.js";
@@ -16,6 +17,7 @@ import { startSchedulerRuntime } from "./runtimes/scheduler.runtime.js";
  */
 async function bootstrap(): Promise<void> {
   const env = loadEnv();
+  configureClock(env.CLOCK_OFFSET_MINUTES);
   const logger = createLogger(env.LOG_LEVEL, env.NODE_ENV !== "production");
   logger.info({ mode: env.RUN_MODE, env: env.NODE_ENV }, "🚀 Запуск Telegram Productivity Companion");
 

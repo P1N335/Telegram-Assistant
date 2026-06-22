@@ -23,6 +23,8 @@ import { registerGamification } from "../modules/gamification/register.js";
 import { PrismaPetRepository } from "../modules/pet/pet.repository.prisma.js";
 import { PetService } from "../modules/pet/pet.service.js";
 import { registerPet } from "../modules/pet/register.js";
+import { PrismaHabitRepository } from "../modules/habits/habit.repository.prisma.js";
+import { HabitService } from "../modules/habits/habit.service.js";
 
 /**
  * Composition root — единственное место связывания реализаций с сервисами через интерфейсы.
@@ -41,6 +43,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
   const gamificationRepository = new PrismaGamificationRepository(prisma);
   const achievementRepository = new PrismaAchievementRepository(prisma);
   const petRepository = new PrismaPetRepository(prisma);
+  const habitRepository = new PrismaHabitRepository(prisma);
 
   // Infra
   const sender = new GrammyApiSender(env.TELEGRAM_BOT_TOKEN);
@@ -61,12 +64,15 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
   const schedulerService = new SchedulerService(
     userRepository,
     taskRepository,
+    habitRepository,
     notificationService,
+    eventBus,
     env,
     logger,
   );
   const gamificationService = new GamificationService(gamificationRepository, achievementRepository, logger);
   const petService = new PetService(petRepository, "cat");
+  const habitService = new HabitService(habitRepository, userRepository, eventBus);
 
   // Подписки на доменные события
   registerGamification(eventBus, gamificationService, {
@@ -90,6 +96,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
       gamification: gamificationRepository,
       achievements: achievementRepository,
       pet: petRepository,
+      habits: habitRepository,
     },
     services: {
       auth: authService,
@@ -100,6 +107,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
       scheduler: schedulerService,
       gamification: gamificationService,
       pet: petService,
+      habits: habitService,
     },
   };
 }

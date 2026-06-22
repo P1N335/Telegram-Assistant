@@ -7,6 +7,7 @@ interface Props {
   busy?: boolean;
   onToggle: (task: TaskDto) => void;
   onDelete: (id: string) => void;
+  onReschedule: (id: string, dueDateIso: string) => void;
   onAddSubtask: (taskId: string, title: string) => void;
   onToggleSubtask: (id: string, isDone: boolean) => void;
   onDeleteSubtask: (id: string) => void;
@@ -17,18 +18,34 @@ function formatDue(iso: string): string {
   return d.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
+function splitIso(iso: string | null): { date: string; time: string } {
+  if (!iso) return { date: "", time: "" };
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  };
+}
+
 export function TaskCard({
   task,
   busy,
   onToggle,
   onDelete,
+  onReschedule,
   onAddSubtask,
   onToggleSubtask,
   onDeleteSubtask,
 }: Props) {
   const done = task.status === "COMPLETED";
   const [subDraft, setSubDraft] = useState("");
-  const [open, setOpen] = useState(false);
+  const [openSubs, setOpenSubs] = useState(false);
+
+  const [openMove, setOpenMove] = useState(false);
+  const init = splitIso(task.dueDate);
+  const [mDate, setMDate] = useState(init.date);
+  const [mTime, setMTime] = useState(init.time || "09:00");
 
   const doneCount = task.subtasks.filter((s) => s.isDone).length;
 
@@ -37,6 +54,12 @@ export function TaskCard({
     if (!t) return;
     onAddSubtask(task.id, t);
     setSubDraft("");
+  };
+
+  const saveMove = () => {
+    if (!mDate) return;
+    onReschedule(task.id, new Date(`${mDate}T${mTime || "09:00"}:00`).toISOString());
+    setOpenMove(false);
   };
 
   return (
@@ -58,19 +81,41 @@ export function TaskCard({
 
           <div className="text-tg-hint mt-1 flex flex-wrap items-center gap-2 text-xs">
             {task.dueDate && <span>🕒 {formatDue(task.dueDate)}</span>}
-            {task.subtasks.length > 0 && (
-              <button onClick={() => setOpen((v) => !v)} className="underline">
-                подзадачи {doneCount}/{task.subtasks.length}
-              </button>
-            )}
-            {task.subtasks.length === 0 && (
-              <button onClick={() => setOpen((v) => !v)} className="underline">
-                + подзадача
-              </button>
-            )}
+            <button onClick={() => setOpenMove((v) => !v)} className="underline">
+              перенести
+            </button>
+            <button onClick={() => setOpenSubs((v) => !v)} className="underline">
+              {task.subtasks.length > 0 ? `подзадачи ${doneCount}/${task.subtasks.length}` : "+ подзадача"}
+            </button>
           </div>
 
-          {open && (
+          {openMove && (
+            <div className="bg-tg-bg mt-2 space-y-2 rounded-xl p-2">
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={mDate}
+                  onChange={(e) => setMDate(e.target.value)}
+                  className="bg-tg-secondaryBg flex-1 rounded-lg px-2 py-1 text-sm outline-none"
+                />
+                <input
+                  type="time"
+                  value={mTime}
+                  onChange={(e) => setMTime(e.target.value)}
+                  className="bg-tg-secondaryBg w-24 rounded-lg px-2 py-1 text-sm outline-none"
+                />
+              </div>
+              <button
+                onClick={saveMove}
+                disabled={busy || !mDate}
+                className="bg-tg-button text-tg-buttonText w-full rounded-lg py-1.5 text-sm disabled:opacity-40"
+              >
+                Перенести
+              </button>
+            </div>
+          )}
+
+          {openSubs && (
             <div className="mt-2 space-y-1.5">
               {task.subtasks.map((s) => (
                 <div key={s.id} className="flex items-center gap-2">

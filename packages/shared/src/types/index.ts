@@ -20,6 +20,13 @@ export const TaskPeriod = {
 } as const;
 export type TaskPeriod = (typeof TaskPeriod)[keyof typeof TaskPeriod];
 
+export const HabitCadence = {
+  DAILY: "DAILY",
+  EVERY_N_DAYS: "EVERY_N_DAYS",
+  WEEKLY: "WEEKLY",
+} as const;
+export type HabitCadence = (typeof HabitCadence)[keyof typeof HabitCadence];
+
 export const NotificationType = {
   MORNING_PLAN: "MORNING_PLAN",
   EVENING_REFLECTION: "EVENING_REFLECTION",

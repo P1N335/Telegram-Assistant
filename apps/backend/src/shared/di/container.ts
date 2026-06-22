@@ -10,6 +10,7 @@ import type { INotificationRepository } from "../../modules/notifications/notifi
 import type { IGamificationRepository } from "../../modules/gamification/gamification.repository.js";
 import type { IAchievementRepository } from "../../modules/gamification/achievement.repository.js";
 import type { IPetRepository } from "../../modules/pet/pet.repository.js";
+import type { IHabitRepository } from "../../modules/habits/habit.repository.js";
 import type { UserService } from "../../modules/users/user.service.js";
 import type { AuthService } from "../../modules/users/auth.service.js";
 import type { TaskService } from "../../modules/tasks/task.service.js";
@@ -18,6 +19,7 @@ import type { NotificationService } from "../../modules/notifications/notificati
 import type { SchedulerService } from "../../modules/scheduling/scheduler.service.js";
 import type { GamificationService } from "../../modules/gamification/gamification.service.js";
 import type { PetService } from "../../modules/pet/pet.service.js";
+import type { HabitService } from "../../modules/habits/habit.service.js";
 
 /**
  * Контейнер зависимостей (composition root собирает его в config/container.ts).
@@ -38,6 +40,7 @@ export interface AppContainer {
     gamification: IGamificationRepository;
     achievements: IAchievementRepository;
     pet: IPetRepository;
+    habits: IHabitRepository;
   };
   services: {
     auth: AuthService;
@@ -48,5 +51,6 @@ export interface AppContainer {
     scheduler: SchedulerService;
     gamification: GamificationService;
     pet: PetService;
+    habits: HabitService;
   };
 }

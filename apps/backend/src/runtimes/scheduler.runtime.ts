@@ -10,14 +10,16 @@ import type { AppContainer } from "../shared/di/container.js";
 export async function startSchedulerRuntime(c: AppContainer): Promise<() => Promise<void>> {
   const log = c.logger.child({ runtime: "scheduler" });
 
-  // Утро/вечер — раз в час.
+  // Утро/вечер + ночной штраф привычек — раз в час.
   const digestTask: ScheduledTask = cron.schedule("0 * * * *", () => {
     void c.services.scheduler.tick().catch((err) => log.error({ err }, "Ошибка тика дайджеста"));
+    void c.services.scheduler.runHabitRollover().catch((err) => log.error({ err }, "Ошибка роллловера привычек"));
   });
 
-  // Напоминания о дедлайнах — раз в 5 минут.
+  // Напоминания о дедлайнах задач и привычках — раз в 5 минут.
   const reminderTask: ScheduledTask = cron.schedule("*/5 * * * *", () => {
-    void c.services.scheduler.runReminders().catch((err) => log.error({ err }, "Ошибка тика напоминаний"));
+    void c.services.scheduler.runReminders().catch((err) => log.error({ err }, "Ошибка напоминаний задач"));
+    void c.services.scheduler.runHabitReminders().catch((err) => log.error({ err }, "Ошибка напоминаний привычек"));
   });
 
   log.info(

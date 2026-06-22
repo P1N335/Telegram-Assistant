@@ -37,11 +37,27 @@ export interface DayCompletedEvent {
   localDate: string;
 }
 
+export interface HabitCompletedEvent {
+  type: "HabitCompleted";
+  userId: string;
+  habitId: string;
+  xp: number;
+}
+
+export interface HabitMissedEvent {
+  type: "HabitMissed";
+  userId: string;
+  habitId: string;
+  penalty: number;
+}
+
 export type DomainEvent =
   | PlanCreatedEvent
   | TaskStatusChangedEvent
   | ReflectionSubmittedEvent
-  | DayCompletedEvent;
+  | DayCompletedEvent
+  | HabitCompletedEvent
+  | HabitMissedEvent;
 
 export type DomainEventType = DomainEvent["type"];
 export type EventOf<T extends DomainEventType> = Extract<DomainEvent, { type: T }>;

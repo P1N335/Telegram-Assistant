@@ -54,11 +54,15 @@ export class GamificationService {
     const achXp = unlocked.reduce((s, a) => s + a.xpReward, 0);
 
     const totalXp = baseXp + achXp;
-    const newXp = current.xp + totalXp;
+    const newXp = Math.max(0, current.xp + totalXp); // XP не уходит ниже 0
     const newLevel = levelFromXp(newXp);
 
-    if (totalXp > 0) patch.incXp = totalXp;
-    if (newLevel !== current.level) patch.setLevel = newLevel;
+    if (totalXp > 0) {
+      patch.incXp = totalXp; // безопасно к гонкам
+    } else if (totalXp < 0) {
+      patch.setXp = newXp; // штраф с клампом — перезапись
+    }
+    if (newLevel !== current.level) patch.setLevel = newLevel; // уровень может и снизиться
 
     await this.stats.applyUpdate(event.userId, patch);
     for (const a of unlocked) await this.achievements.unlock(event.userId, a.id);
@@ -118,6 +122,14 @@ export class GamificationService {
       }
       case "DayCompleted": {
         baseXp += XP_REWARDS.DAY_COMPLETED;
+        break;
+      }
+      case "HabitCompleted": {
+        baseXp += event.xp; // меньше, чем за обычную задачу
+        break;
+      }
+      case "HabitMissed": {
+        baseXp -= event.penalty; // штраф больше награды
         break;
       }
     }

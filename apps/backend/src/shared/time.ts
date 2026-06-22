@@ -98,6 +98,16 @@ function zonedTimeToUtc(wallClock: string, timezone: string): Date {
   return new Date(naive.getTime() - offset * 60000);
 }
 
+/** Локальная дата (YYYY-MM-DD) + время (HH:MM) в таймзоне → UTC-инстант. */
+export function localDateTimeToUtc(localDate: string, timeHHMM: string, timezone: string): Date {
+  return zonedTimeToUtc(`${localDate}T${timeHHMM}:00`, timezone);
+}
+
+/** Сдвиг локальной даты YYYY-MM-DD на n дней (n может быть отрицательным). */
+export function addLocalDays(dateStr: string, n: number): string {
+  return addDaysStr(dateStr, n);
+}
+
 /**
  * Полуинтервал [start, end) периода, содержащего localDate, в виде UTC-инстантов —
  * границы соответствуют локальной полуночи пользователя. Используется для фильтра dueDate.

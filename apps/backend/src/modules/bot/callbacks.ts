@@ -36,7 +36,9 @@ export function registerCallbacks(bot: Bot<BotContext>, c: AppContainer): void {
       await ctx.answerCallbackQuery({ text: "Готово ✅" });
       // Перерисовываем список с обновлёнными статусами.
       const tasks = await c.services.tasks.listForDay(user.id);
-      await ctx.editMessageText(TEXT.tasksList(tasks), { reply_markup: tasksKeyboard(tasks) });
+      await ctx.editMessageText(TEXT.tasksList(tasks), {
+        reply_markup: tasksKeyboard(tasks, c.env.MINI_APP_URL),
+      });
     } catch (err) {
       c.logger.child({ module: "bot" }).warn({ err }, "callback task status");
       await ctx.answerCallbackQuery({ text: "Не получилось обновить" });

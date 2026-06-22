@@ -28,7 +28,7 @@ export function registerCommands(bot: Bot<BotContext>, c: AppContainer): void {
       await ctx.reply(TEXT.noTasks, { reply_markup: miniAppButton(c.env.MINI_APP_URL) });
       return;
     }
-    await ctx.reply(TEXT.tasksList(tasks), { reply_markup: tasksKeyboard(tasks) });
+    await ctx.reply(TEXT.tasksList(tasks), { reply_markup: tasksKeyboard(tasks, c.env.MINI_APP_URL) });
   });
 
   bot.command("stats", async (ctx) => {

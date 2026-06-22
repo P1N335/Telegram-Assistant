@@ -21,6 +21,7 @@ export function registerPet(bus: EventBus, pet: PetService, logger: Logger): voi
   bus.on("PlanCreated", (e) => safe(pet.reward(e.userId, REWARDS.plan)));
   bus.on("ReflectionSubmitted", (e) => safe(pet.reward(e.userId, REWARDS.reflection)));
   bus.on("DayCompleted", (e) => safe(pet.reward(e.userId, REWARDS.dayComplete)));
+  bus.on("HabitCompleted", (e) => safe(pet.reward(e.userId, REWARDS.taskDone)));
   bus.on("TaskStatusChanged", (e) => {
     if (e.status === TaskStatus.COMPLETED && e.firstCompletion) {
       safe(pet.reward(e.userId, REWARDS.taskDone));

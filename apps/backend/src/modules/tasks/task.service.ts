@@ -10,6 +10,7 @@ import {
 } from "@tpc/shared";
 import { ForbiddenError, NotFoundError, ValidationError } from "../../shared/errors/index.js";
 import { getLocalDateString, periodAnchor, periodRange } from "../../shared/time.js";
+import { now } from "../../shared/clock.js";
 import type { EventBus } from "../../shared/events/event-bus.js";
 import type { IUserRepository } from "../users/user.repository.js";
 import type { ITaskRepository, TaskWithSubtasks } from "./task.repository.js";
@@ -29,7 +30,7 @@ export class TaskService {
     const user = await this.users.findById(userId);
     if (!user) throw new NotFoundError("Пользователь не найден");
 
-    const dateStr = input.date ?? getLocalDateString(user.timezone);
+    const dateStr = input.date ?? getLocalDateString(user.timezone, now());
     const planDate = periodAnchor(TaskPeriod.DAY, dateStr);
 
     const items =
@@ -59,7 +60,7 @@ export class TaskService {
     const title = req.title.trim();
     if (!title) throw new ValidationError("Пустой заголовок задачи");
 
-    const today = getLocalDateString(user.timezone);
+    const today = getLocalDateString(user.timezone, now());
     const anchor = periodAnchor(req.period, req.date ?? today);
     const dueDate = req.dueDate ? new Date(req.dueDate) : null;
     const base = await this.tasks.countForPeriod(userId, req.period, anchor);
@@ -85,7 +86,7 @@ export class TaskService {
     const user = await this.users.findById(userId);
     if (!user) throw new NotFoundError("Пользователь не найден");
 
-    const refDate = dateStr ?? getLocalDateString(user.timezone);
+    const refDate = dateStr ?? getLocalDateString(user.timezone, now());
     const anchor = periodAnchor(period, refDate); // бакет для задач без даты
     const { start, end } = periodRange(period, user.timezone, refDate); // диапазон для задач с датой
 
@@ -98,7 +99,7 @@ export class TaskService {
 
     const previousStatus = task.status as TaskStatus;
     const firstCompletion = status === TaskStatus.COMPLETED && !task.xpAwarded;
-    const completedAt = status === TaskStatus.COMPLETED ? new Date() : null;
+    const completedAt = status === TaskStatus.COMPLETED ? now() : null;
     const updated = await this.tasks.updateStatus(taskId, status, completedAt, firstCompletion);
 
     const localDate = task.planDate.toISOString().slice(0, 10);

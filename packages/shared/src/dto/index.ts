@@ -1,4 +1,4 @@
-import type { TaskStatus, TaskPeriod, PetMoodLabel } from "../types/index.js";
+import type { TaskStatus, TaskPeriod, HabitCadence, PetMoodLabel } from "../types/index.js";
 
 /** Контракты REST API между backend и Mini App. */
 
@@ -104,6 +104,31 @@ export interface CreateSubtaskRequest {
 export interface UpdateSubtaskRequest {
   title?: string;
   isDone?: boolean;
+}
+
+// ── Привычки ──
+
+export interface HabitDto {
+  id: string;
+  title: string;
+  timeOfDay: string; // HH:MM
+  cadence: HabitCadence;
+  intervalDays: number | null;
+  weekdays: number[]; // ISO 1=Пн..7=Вс
+  xpReward: number;
+  xpPenalty: number;
+  dueToday: boolean; // нужно ли выполнять сегодня по расписанию
+  doneToday: boolean; // отмечена ли сегодня
+}
+
+export interface CreateHabitRequest {
+  title: string;
+  timeOfDay: string; // HH:MM
+  cadence: HabitCadence;
+  intervalDays?: number; // для EVERY_N_DAYS
+  weekdays?: number[]; // для WEEKLY (ISO 1..7)
+  xpReward?: number;
+  xpPenalty?: number;
 }
 
 export interface HomeResponse {

@@ -33,11 +33,18 @@ enum TaskPeriod {
   YEAR
 }
 
+enum HabitCadence {
+  DAILY
+  EVERY_N_DAYS
+  WEEKLY
+}
+
 enum NotificationType {
   MORNING_PLAN
   EVENING_REFLECTION
   PET_REMINDER
   TASK_REMINDER
+  HABIT_REMINDER
   STREAK_WARNING
   ACHIEVEMENT_UNLOCKED
   CUSTOM
@@ -73,6 +80,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   tasks         Task[]
+  habits        Habit[]
   dailyReports  DailyReport[]
   pet           Pet?
   statistics    UserStatistics?
@@ -133,6 +141,47 @@ model Subtask {
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@index([taskId])
+}
+
+// ──────────────────────────────────────────────────────────────
+// Habit — привычка с расписанием. Выполняется регулярно (cadence),
+// в заданное время; меньше XP за выполнение, больше штраф за пропуск.
+// ──────────────────────────────────────────────────────────────
+
+model Habit {
+  id        String       @id @default(cuid())
+  userId    String
+  title     String
+  timeOfDay String // локальное время "HH:MM"
+  cadence   HabitCadence @default(DAILY)
+
+  intervalDays Int? // для EVERY_N_DAYS (раз в N дней от startDate)
+  weekdays     Int[] // для WEEKLY: ISO-дни 1=Пн..7=Вс
+  startDate    DateTime @db.Date // якорь для EVERY_N_DAYS
+
+  xpReward  Int     @default(5)
+  xpPenalty Int     @default(10)
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completions HabitCompletion[]
+
+  @@index([userId, isActive])
+}
+
+// Отметка выполнения привычки за конкретный локальный день (одна на день).
+model HabitCompletion {
+  id          String   @id @default(cuid())
+  habitId     String
+  date        DateTime @db.Date
+  completedAt DateTime @default(now())
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
 }
 
 // ──────────────────────────────────────────────────────────────

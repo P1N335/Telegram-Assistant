@@ -19,13 +19,15 @@ export function eveningKeyboard(url: string): InlineKeyboard {
     .webApp("📱 Открыть приложение", url);
 }
 
-/** Под каждой задачей — действия смены статуса (callback task:<id>:<STATUS>). */
-export function tasksKeyboard(tasks: TaskDto[]): InlineKeyboard {
+/**
+ * Под каждой задачей: ✅ выполнить (callback) и 🕒 перенести (открывает Mini App,
+ * т.к. в боте нет нативного выбора даты/времени).
+ */
+export function tasksKeyboard(tasks: TaskDto[], miniAppUrl: string): InlineKeyboard {
   const kb = new InlineKeyboard();
   tasks.forEach((t, i) => {
     kb.text(`✅ ${i + 1}`, `task:${t.id}:COMPLETED`)
-      .text(`⏭️ ${i + 1}`, `task:${t.id}:SKIPPED`)
-      .text(`⌛️ ${i + 1}`, `task:${t.id}:POSTPONED`)
+      .webApp(`🕒 ${i + 1}`, miniAppUrl)
       .row();
   });
   return kb;
