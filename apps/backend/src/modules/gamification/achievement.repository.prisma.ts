@@ -16,6 +16,14 @@ export class PrismaAchievementRepository implements IAchievementRepository {
     return new Set(rows.map((r) => r.achievement.code));
   }
 
+  async findUnlockedMap(userId: string): Promise<Map<string, Date>> {
+    const rows = await this.prisma.userAchievement.findMany({
+      where: { userId },
+      select: { unlockedAt: true, achievement: { select: { code: true } } },
+    });
+    return new Map(rows.map((r) => [r.achievement.code, r.unlockedAt]));
+  }
+
   async unlock(userId: string, achievementId: string): Promise<boolean> {
     try {
       await this.prisma.userAchievement.create({ data: { userId, achievementId } });

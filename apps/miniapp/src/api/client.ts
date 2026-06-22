@@ -10,6 +10,7 @@ import type {
   UpdateTaskRequest,
   HabitDto,
   CreateHabitRequest,
+  AchievementDto,
 } from "@tpc/shared";
 import { getInitData } from "../lib/telegram.js";
 
@@ -99,5 +100,9 @@ export const api = {
     request<{ habit: HabitDto }>(`/habits/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   completeHabit: (id: string) =>
     request<{ habit: HabitDto }>(`/habits/${id}/complete`, { method: "POST" }),
+  uncompleteHabit: (id: string) =>
+    request<{ habit: HabitDto }>(`/habits/${id}/complete`, { method: "DELETE" }),
   deleteHabit: (id: string) => request<void>(`/habits/${id}`, { method: "DELETE" }),
+
+  getAchievements: () => request<{ achievements: AchievementDto[] }>("/achievements"),
 };

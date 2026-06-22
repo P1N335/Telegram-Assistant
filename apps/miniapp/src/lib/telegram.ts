@@ -13,6 +13,11 @@ export function getTelegramUserName(): string {
   return getWebApp()?.initDataUnsafe?.user?.first_name ?? "друг";
 }
 
+/** URL аватарки из Telegram, если клиент его передал (доступен не всегда). */
+export function getTelegramPhotoUrl(): string | undefined {
+  return getWebApp()?.initDataUnsafe?.user?.photo_url;
+}
+
 /** Готовность приложения + развернуть на весь экран + подхватить тему. */
 export function initTelegram(): void {
   const wa = getWebApp();

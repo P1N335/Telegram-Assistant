@@ -34,6 +34,8 @@ export interface IHabitRepository {
 
   /** Создаёт отметку выполнения; false, если уже была (идемпотентность по дню). */
   createCompletionIfAbsent(habitId: string, date: Date): Promise<boolean>;
+  /** Удаляет отметку выполнения; true, если запись была. */
+  deleteCompletion(habitId: string, date: Date): Promise<boolean>;
   hasCompletion(habitId: string, date: Date): Promise<boolean>;
   /** id привычек пользователя, выполненных в указанный день. */
   completedHabitIds(userId: string, date: Date): Promise<Set<string>>;

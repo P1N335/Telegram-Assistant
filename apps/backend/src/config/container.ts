@@ -19,6 +19,7 @@ import { ReflectionService } from "../modules/reflection/reflection.service.js";
 import { NotificationService } from "../modules/notifications/notification.service.js";
 import { SchedulerService } from "../modules/scheduling/scheduler.service.js";
 import { GamificationService } from "../modules/gamification/gamification.service.js";
+import { AchievementService } from "../modules/gamification/achievement.service.js";
 import { registerGamification } from "../modules/gamification/register.js";
 import { PrismaPetRepository } from "../modules/pet/pet.repository.prisma.js";
 import { PetService } from "../modules/pet/pet.service.js";
@@ -74,6 +75,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
     logger,
   );
   const gamificationService = new GamificationService(gamificationRepository, achievementRepository, logger);
+  const achievementService = new AchievementService(achievementRepository);
   const petService = new PetService(petRepository, "cat");
   const habitService = new HabitService(habitRepository, userRepository, eventBus);
   const entitlementService = new EntitlementService(subscriptionRepository);
@@ -111,6 +113,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
       notifications: notificationService,
       scheduler: schedulerService,
       gamification: gamificationService,
+      achievements: achievementService,
       pet: petService,
       habits: habitService,
       entitlements: entitlementService,

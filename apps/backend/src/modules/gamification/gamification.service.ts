@@ -132,6 +132,10 @@ export class GamificationService {
         baseXp -= event.penalty; // штраф больше награды
         break;
       }
+      case "HabitUncompleted": {
+        baseXp -= event.xp; // снятие отметки возвращает начисленный XP (анти-фарм)
+        break;
+      }
     }
 
     return { patch, baseXp };

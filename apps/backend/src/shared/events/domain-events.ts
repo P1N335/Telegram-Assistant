@@ -51,13 +51,21 @@ export interface HabitMissedEvent {
   penalty: number;
 }
 
+export interface HabitUncompletedEvent {
+  type: "HabitUncompleted";
+  userId: string;
+  habitId: string;
+  xp: number; // возврат ранее начисленного
+}
+
 export type DomainEvent =
   | PlanCreatedEvent
   | TaskStatusChangedEvent
   | ReflectionSubmittedEvent
   | DayCompletedEvent
   | HabitCompletedEvent
-  | HabitMissedEvent;
+  | HabitMissedEvent
+  | HabitUncompletedEvent;
 
 export type DomainEventType = DomainEvent["type"];
 export type EventOf<T extends DomainEventType> = Extract<DomainEvent, { type: T }>;

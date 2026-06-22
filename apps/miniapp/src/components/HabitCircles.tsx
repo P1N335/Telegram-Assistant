@@ -110,7 +110,8 @@ export function HabitCircles({ onChanged }: { onChanged?: () => void }) {
   };
 
   const onTap = (h: HabitDto) => {
-    if (h.dueToday && !h.doneToday) void run(() => api.completeHabit(h.id));
+    if (h.doneToday) void run(() => api.uncompleteHabit(h.id));
+    else if (h.dueToday) void run(() => api.completeHabit(h.id));
   };
 
   return (

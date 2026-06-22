@@ -34,6 +34,7 @@ export function registerGamification(
   bus.on("DayCompleted", handle);
   bus.on("HabitCompleted", handle);
   bus.on("HabitMissed", handle);
+  bus.on("HabitUncompleted", handle);
 
   async function notify(outcome: GamificationOutcome): Promise<void> {
     const user = await deps.users.findById(outcome.userId);

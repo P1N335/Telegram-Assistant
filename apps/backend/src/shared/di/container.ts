@@ -19,6 +19,7 @@ import type { ReflectionService } from "../../modules/reflection/reflection.serv
 import type { NotificationService } from "../../modules/notifications/notification.service.js";
 import type { SchedulerService } from "../../modules/scheduling/scheduler.service.js";
 import type { GamificationService } from "../../modules/gamification/gamification.service.js";
+import type { AchievementService } from "../../modules/gamification/achievement.service.js";
 import type { PetService } from "../../modules/pet/pet.service.js";
 import type { HabitService } from "../../modules/habits/habit.service.js";
 import type { EntitlementService } from "../../modules/subscription/entitlement.service.js";
@@ -53,6 +54,7 @@ export interface AppContainer {
     notifications: NotificationService;
     scheduler: SchedulerService;
     gamification: GamificationService;
+    achievements: AchievementService;
     pet: PetService;
     habits: HabitService;
     entitlements: EntitlementService;

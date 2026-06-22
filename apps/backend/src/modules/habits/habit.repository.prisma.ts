@@ -72,6 +72,11 @@ export class PrismaHabitRepository implements IHabitRepository {
     }
   }
 
+  async deleteCompletion(habitId: string, date: Date): Promise<boolean> {
+    const res = await this.prisma.habitCompletion.deleteMany({ where: { habitId, date } });
+    return res.count > 0;
+  }
+
   async hasCompletion(habitId: string, date: Date): Promise<boolean> {
     const row = await this.prisma.habitCompletion.findUnique({
       where: { habitId_date: { habitId, date } },

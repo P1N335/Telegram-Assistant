@@ -84,6 +84,18 @@ export class HabitService {
     return HabitService.toDto(habit, isDueOn(toSchedule(habit), today), true);
   }
 
+  async uncomplete(userId: string, habitId: string): Promise<HabitDto> {
+    const habit = await this.requireOwn(userId, habitId);
+    const user = await this.users.findById(userId);
+    const today = getLocalDateString(user!.timezone, now());
+
+    const removed = await this.habits.deleteCompletion(habitId, toDateOnly(today));
+    if (removed) {
+      await this.events.emit({ type: "HabitUncompleted", userId, habitId, xp: habit.xpReward });
+    }
+    return HabitService.toDto(habit, isDueOn(toSchedule(habit), today), false);
+  }
+
   async deleteHabit(userId: string, habitId: string): Promise<void> {
     await this.requireOwn(userId, habitId);
     await this.habits.delete(habitId);

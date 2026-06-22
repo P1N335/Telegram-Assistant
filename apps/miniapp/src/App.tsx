@@ -6,8 +6,7 @@ import { BottomNav, type Tab } from "./components/BottomNav.js";
 import { Loader, ErrorState } from "./components/ui.js";
 import { HomeScreen } from "./screens/HomeScreen.js";
 import { TasksScreen } from "./screens/TasksScreen.js";
-import { StatsScreen } from "./screens/StatsScreen.js";
-import { PetScreen } from "./screens/PetScreen.js";
+import { ProfileScreen } from "./screens/ProfileScreen.js";
 
 type Status = "loading" | "ready" | "error" | "no-telegram";
 
@@ -90,8 +89,7 @@ export function App() {
           />
         )}
         {tab === "tasks" && <TasksScreen onChanged={refresh} />}
-        {tab === "stats" && <StatsScreen data={data} />}
-        {tab === "pet" && <PetScreen data={data} />}
+        {tab === "profile" && <ProfileScreen data={data} onChanged={refresh} />}
       </main>
       <BottomNav active={tab} onChange={(t) => (t === "home" ? (setTab(t), void refresh()) : setTab(t))} />
     </div>

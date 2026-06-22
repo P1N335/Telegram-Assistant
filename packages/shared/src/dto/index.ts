@@ -148,6 +148,16 @@ export interface CreateHabitRequest {
 /** Редактирование привычки — полный набор полей (как при создании, без startDate). */
 export type UpdateHabitRequest = CreateHabitRequest;
 
+export interface AchievementDto {
+  code: string;
+  title: string;
+  description: string;
+  icon: string | null;
+  category: string | null;
+  unlocked: boolean;
+  unlockedAt: string | null; // ISO
+}
+
 export interface HomeResponse {
   user: UserDto;
   statistics: StatisticsDto;

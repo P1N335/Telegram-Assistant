@@ -60,6 +60,16 @@ export function createHabitsController(habitService: HabitService): Router {
     }),
   );
 
+  // DELETE /api/habits/:id/complete — снять отметку за сегодня
+  router.delete(
+    "/:id/complete",
+    asyncHandler(async (req: AuthedRequest, res) => {
+      const userId = requireUserId(req);
+      const id = z.string().min(1).parse(req.params.id);
+      res.json({ habit: await habitService.uncomplete(userId, id) });
+    }),
+  );
+
   // DELETE /api/habits/:id
   router.delete(
     "/:id",
