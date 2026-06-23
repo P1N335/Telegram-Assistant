@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { HabitDto, HabitCadence, CreateHabitRequest } from "@tpc/shared";
+import type { HabitDto, HabitCadence, CreateHabitRequest, SkillDto } from "@tpc/shared";
 import { api } from "../api/client.js";
+import { SkillSelect } from "./SkillSelect.js";
 
 const WEEKDAYS = [
   { id: 1, label: "Пн" },
@@ -87,6 +88,7 @@ interface EditorState {
 
 export function HabitCircles({ onChanged }: { onChanged?: () => void }) {
   const [habits, setHabits] = useState<HabitDto[]>([]);
+  const [skills, setSkills] = useState<SkillDto[]>([]);
   const [busy, setBusy] = useState(false);
   const [editor, setEditor] = useState<EditorState | null>(null);
 
@@ -97,6 +99,11 @@ export function HabitCircles({ onChanged }: { onChanged?: () => void }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Скиллы для привязки привычки — грузим один раз.
+  useEffect(() => {
+    void api.getSkills().then((r) => setSkills(r.skills)).catch(() => setSkills([]));
+  }, []);
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -134,6 +141,7 @@ export function HabitCircles({ onChanged }: { onChanged?: () => void }) {
         <HabitEditor
           state={editor}
           busy={busy}
+          skills={skills}
           onClose={() => setEditor(null)}
           onSubmit={async (body) => {
             await run(() =>
@@ -160,12 +168,14 @@ export function HabitCircles({ onChanged }: { onChanged?: () => void }) {
 function HabitEditor({
   state,
   busy,
+  skills,
   onClose,
   onSubmit,
   onDelete,
 }: {
   state: EditorState;
   busy?: boolean;
+  skills: SkillDto[];
   onClose: () => void;
   onSubmit: (body: CreateHabitRequest) => void;
   onDelete?: () => void;
@@ -176,6 +186,7 @@ function HabitEditor({
   const [cadence, setCadence] = useState<HabitCadence>(h?.cadence ?? "DAILY");
   const [intervalDays, setIntervalDays] = useState(h?.intervalDays ?? 2);
   const [weekdays, setWeekdays] = useState<number[]>(h?.weekdays ?? []);
+  const [skillCode, setSkillCode] = useState(h?.skillCode ?? "");
 
   const toggleWeekday = (id: number) =>
     setWeekdays((w) => (w.includes(id) ? w.filter((x) => x !== id) : [...w, id]));
@@ -189,6 +200,7 @@ function HabitEditor({
       cadence,
       intervalDays: cadence === "EVERY_N_DAYS" ? intervalDays : undefined,
       weekdays: cadence === "WEEKLY" ? weekdays : undefined,
+      skillCode: skillCode || null,
     });
 
   return (
@@ -250,6 +262,19 @@ function HabitEditor({
                 {w.label}
               </button>
             ))}
+          </div>
+        )}
+
+        {skills.length > 0 && (
+          <div className="space-y-1">
+            <span className="text-tg-hint text-sm">Скилл</span>
+            <SkillSelect
+              skills={skills}
+              value={skillCode}
+              onChange={setSkillCode}
+              disabled={busy}
+              className="bg-tg-secondaryBg"
+            />
           </div>
         )}
 

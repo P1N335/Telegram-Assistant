@@ -20,6 +20,8 @@ export interface TaskStatusChangedEvent {
   previousStatus: TaskStatus;
   /** true только при первом в жизни задачи переходе в COMPLETED (анти-фарм). */
   firstCompletion: boolean;
+  /** Привязка задачи к скиллу (Skill.code), если задана. Слой скиллов начисляет XP. */
+  skillCode?: string | null;
 }
 
 export interface ReflectionSubmittedEvent {
@@ -42,6 +44,8 @@ export interface HabitCompletedEvent {
   userId: string;
   habitId: string;
   xp: number;
+  /** Привязка привычки к скиллу (Skill.code), если задана. */
+  skillCode?: string | null;
 }
 
 export interface HabitMissedEvent {
@@ -56,6 +60,8 @@ export interface HabitUncompletedEvent {
   userId: string;
   habitId: string;
   xp: number; // возврат ранее начисленного
+  /** Привязка привычки к скиллу (Skill.code), если задана. */
+  skillCode?: string | null;
 }
 
 export type DomainEvent =

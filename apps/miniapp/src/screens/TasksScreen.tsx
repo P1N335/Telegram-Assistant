@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
-import type { TaskDto, TaskPeriod } from "@tpc/shared";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { SkillDto, TaskDto, TaskPeriod } from "@tpc/shared";
 import { api } from "../api/client.js";
 import { Loader } from "../components/ui.js";
 import { TaskCard } from "../components/TaskCard.js";
+import { SkillSelect } from "../components/SkillSelect.js";
 
 const PERIODS: Array<{ id: TaskPeriod; label: string }> = [
   { id: "DAY", label: "День" },
@@ -21,6 +22,10 @@ export function TasksScreen({ onChanged }: { onChanged?: () => void }) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [skillCode, setSkillCode] = useState("");
+
+  const [skills, setSkills] = useState<SkillDto[]>([]);
+  const skillByCode = useMemo(() => new Map(skills.map((s) => [s.code, s])), [skills]);
 
   const load = useCallback(async (p: TaskPeriod) => {
     setLoading(true);
@@ -35,6 +40,11 @@ export function TasksScreen({ onChanged }: { onChanged?: () => void }) {
   useEffect(() => {
     void load(period);
   }, [period, load]);
+
+  // Скиллы грузим один раз — для выбора при создании и для меток на карточках.
+  useEffect(() => {
+    void api.getSkills().then((r) => setSkills(r.skills)).catch(() => setSkills([]));
+  }, []);
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -52,10 +62,11 @@ export function TasksScreen({ onChanged }: { onChanged?: () => void }) {
     if (!t) return;
     let dueDate: string | null = null;
     if (date) dueDate = new Date(`${date}T${time || "09:00"}:00`).toISOString();
-    await run(() => api.createTask({ title: t, period, dueDate }));
+    await run(() => api.createTask({ title: t, period, dueDate, skillCode: skillCode || null }));
     setTitle("");
     setDate("");
     setTime("");
+    setSkillCode("");
     setFormOpen(false);
   };
 
@@ -120,6 +131,7 @@ export function TasksScreen({ onChanged }: { onChanged?: () => void }) {
               className="bg-tg-bg w-28 rounded-xl px-3 py-2 text-sm outline-none"
             />
           </div>
+          <SkillSelect skills={skills} value={skillCode} onChange={setSkillCode} disabled={busy} />
           <p className="text-tg-hint text-xs">
             Если указать дату и время — бот напомнит примерно за час до дедлайна.
           </p>
@@ -144,6 +156,7 @@ export function TasksScreen({ onChanged }: { onChanged?: () => void }) {
               key={t.id}
               task={t}
               busy={busy}
+              skill={t.skillCode ? skillByCode.get(t.skillCode) : undefined}
               onToggle={(task) =>
                 run(() =>
                   api.setTaskStatus(task.id, task.status === "COMPLETED" ? "PENDING" : "COMPLETED"),

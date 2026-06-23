@@ -28,6 +28,9 @@ import { PrismaHabitRepository } from "../modules/habits/habit.repository.prisma
 import { HabitService } from "../modules/habits/habit.service.js";
 import { PrismaSubscriptionRepository } from "../modules/subscription/subscription.repository.prisma.js";
 import { EntitlementService } from "../modules/subscription/entitlement.service.js";
+import { PrismaSkillRepository } from "../modules/skills/skill.repository.prisma.js";
+import { SkillService } from "../modules/skills/skill.service.js";
+import { registerSkills } from "../modules/skills/register.js";
 
 /**
  * Composition root — единственное место связывания реализаций с сервисами через интерфейсы.
@@ -48,6 +51,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
   const petRepository = new PrismaPetRepository(prisma);
   const habitRepository = new PrismaHabitRepository(prisma);
   const subscriptionRepository = new PrismaSubscriptionRepository(prisma);
+  const skillRepository = new PrismaSkillRepository(prisma);
 
   // Infra
   const sender = new GrammyApiSender(env.TELEGRAM_BOT_TOKEN);
@@ -79,6 +83,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
   const petService = new PetService(petRepository, "cat");
   const habitService = new HabitService(habitRepository, userRepository, eventBus);
   const entitlementService = new EntitlementService(subscriptionRepository);
+  const skillService = new SkillService(skillRepository);
 
   // Подписки на доменные события
   registerGamification(eventBus, gamificationService, {
@@ -87,6 +92,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
     logger,
   });
   registerPet(eventBus, petService, logger);
+  registerSkills(eventBus, skillService, logger);
 
   return {
     env,
@@ -104,6 +110,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
       pet: petRepository,
       habits: habitRepository,
       subscriptions: subscriptionRepository,
+      skills: skillRepository,
     },
     services: {
       auth: authService,
@@ -117,6 +124,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
       pet: petService,
       habits: habitService,
       entitlements: entitlementService,
+      skills: skillService,
     },
   };
 }

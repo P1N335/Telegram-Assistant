@@ -73,8 +73,26 @@ async function main() {
     });
   }
 
+  // ── Шаблоны скиллов (роадмап) ──
+  const skillTemplates = [
+    { code: "sport", name: "Спорт", icon: "🏋️", category: "Здоровье", sortOrder: 1 },
+    { code: "health", name: "Здоровье", icon: "🧘", category: "Здоровье", sortOrder: 2 },
+    { code: "study", name: "Учёба", icon: "📚", category: "Развитие", sortOrder: 3 },
+    { code: "productivity", name: "Продуктивность", icon: "⚡", category: "Развитие", sortOrder: 4 },
+    { code: "creativity", name: "Творчество", icon: "🎨", category: "Развитие", sortOrder: 5 },
+    { code: "finance", name: "Финансы", icon: "💰", category: "Жизнь", sortOrder: 6 },
+    { code: "mind", name: "Осознанность", icon: "🧠", category: "Жизнь", sortOrder: 7 },
+  ];
+  for (const t of skillTemplates) {
+    await prisma.skillTemplate.upsert({
+      where: { code: t.code },
+      update: { name: t.name, icon: t.icon, category: t.category, sortOrder: t.sortOrder },
+      create: t,
+    });
+  }
+
   // eslint-disable-next-line no-console
-  console.log("✅ Seed готов: виды питомцев и достижения");
+  console.log("✅ Seed готов: виды питомцев, достижения, шаблоны скиллов");
 }
 
 main()

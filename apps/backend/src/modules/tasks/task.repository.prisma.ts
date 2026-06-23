@@ -35,6 +35,7 @@ export class PrismaTaskRepository implements ITaskRepository {
         description: data.description ?? null,
         dueDate: data.dueDate ?? null,
         order: data.order,
+        skillCode: data.skillCode ?? null,
         subtasks: data.subtaskTitles?.length
           ? { create: data.subtaskTitles.map((t, i) => ({ title: t, order: i })) }
           : undefined,
@@ -86,13 +87,14 @@ export class PrismaTaskRepository implements ITaskRepository {
     });
   }
 
-  updateTask(id: string, data: { title?: string; dueDate?: Date | null }): Promise<Task> {
+  updateTask(id: string, data: { title?: string; dueDate?: Date | null; skillCode?: string | null }): Promise<Task> {
     return this.prisma.task.update({
       where: { id },
       data: {
         ...(data.title !== undefined ? { title: data.title } : {}),
         // Меняем дедлайн → сбрасываем метку напоминания, чтобы напомнить заново.
         ...(data.dueDate !== undefined ? { dueDate: data.dueDate, reminderSentAt: null } : {}),
+        ...(data.skillCode !== undefined ? { skillCode: data.skillCode } : {}),
       },
     });
   }

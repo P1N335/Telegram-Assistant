@@ -7,3 +7,14 @@ export const XP_REWARDS = {
 } as const;
 
 export type XpAction = keyof typeof XP_REWARDS;
+
+/**
+ * Награды XP скиллам (отдельный пул прогрессии RPG-скиллов, не путать с XP пользователя).
+ * Задача за первое выполнение даёт фиксированный SKILL_TASK_COMPLETED; привычка —
+ * собственный xpReward (динамически из самой привычки), поэтому здесь его нет.
+ */
+export const SKILL_XP_REWARDS = {
+  TASK_COMPLETED: 15,
+} as const;
+
+export type SkillXpAction = keyof typeof SKILL_XP_REWARDS;

@@ -5,6 +5,8 @@ import { Card } from "./ui.js";
 interface Props {
   task: TaskDto;
   busy?: boolean;
+  /** Скилл, к которому привязана задача (для отображения метки), если есть. */
+  skill?: { name: string; icon: string | null };
   onToggle: (task: TaskDto) => void;
   onDelete: (id: string) => void;
   onReschedule: (id: string, dueDateIso: string) => void;
@@ -31,6 +33,7 @@ function splitIso(iso: string | null): { date: string; time: string } {
 export function TaskCard({
   task,
   busy,
+  skill,
   onToggle,
   onDelete,
   onReschedule,
@@ -80,6 +83,12 @@ export function TaskCard({
           <p className={`text-sm ${done ? "text-tg-hint line-through" : ""}`}>{task.title}</p>
 
           <div className="text-tg-hint mt-1 flex flex-wrap items-center gap-2 text-xs">
+            {skill && (
+              <span className="bg-tg-bg text-tg-text inline-flex items-center gap-1 rounded-full px-2 py-0.5">
+                <span>{skill.icon ?? "🎯"}</span>
+                <span className="max-w-24 truncate">{skill.name}</span>
+              </span>
+            )}
             {task.dueDate && <span>🕒 {formatDue(task.dueDate)}</span>}
             <button onClick={() => setOpenMove((v) => !v)} className="underline">
               перенести

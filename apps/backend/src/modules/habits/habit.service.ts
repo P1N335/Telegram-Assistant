@@ -32,6 +32,7 @@ export class HabitService {
       startDate: toDateOnly(today),
       xpReward: req.xpReward ?? 5,
       xpPenalty: req.xpPenalty ?? 10,
+      skillCode: normalizeSkillCode(req.skillCode),
     });
 
     return HabitService.toDto(created, isDueOn(toSchedule(created), today), false);
@@ -50,6 +51,7 @@ export class HabitService {
       weekdays: norm.weekdays,
       xpReward: req.xpReward ?? habit.xpReward,
       xpPenalty: req.xpPenalty ?? habit.xpPenalty,
+      ...(req.skillCode !== undefined ? { skillCode: normalizeSkillCode(req.skillCode) } : {}),
     });
 
     const today = getLocalDateString(user!.timezone, now());
@@ -79,7 +81,13 @@ export class HabitService {
 
     const created = await this.habits.createCompletionIfAbsent(habitId, toDateOnly(today));
     if (created) {
-      await this.events.emit({ type: "HabitCompleted", userId, habitId, xp: habit.xpReward });
+      await this.events.emit({
+        type: "HabitCompleted",
+        userId,
+        habitId,
+        xp: habit.xpReward,
+        skillCode: habit.skillCode,
+      });
     }
     return HabitService.toDto(habit, isDueOn(toSchedule(habit), today), true);
   }
@@ -91,7 +99,13 @@ export class HabitService {
 
     const removed = await this.habits.deleteCompletion(habitId, toDateOnly(today));
     if (removed) {
-      await this.events.emit({ type: "HabitUncompleted", userId, habitId, xp: habit.xpReward });
+      await this.events.emit({
+        type: "HabitUncompleted",
+        userId,
+        habitId,
+        xp: habit.xpReward,
+        skillCode: habit.skillCode,
+      });
     }
     return HabitService.toDto(habit, isDueOn(toSchedule(habit), today), false);
   }
@@ -136,10 +150,18 @@ export class HabitService {
       weekdays: h.weekdays,
       xpReward: h.xpReward,
       xpPenalty: h.xpPenalty,
+      skillCode: h.skillCode,
       dueToday,
       doneToday,
     };
   }
+}
+
+/** Пустую строку трактуем как «без скилла» (null), иначе — обрезанный код. */
+function normalizeSkillCode(code: string | null | undefined): string | null {
+  if (code === undefined || code === null) return null;
+  const trimmed = code.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 /** Habit → расписание для правил. */

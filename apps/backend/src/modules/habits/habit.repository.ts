@@ -9,6 +9,7 @@ export interface CreateHabitData {
   startDate: Date;
   xpReward: number;
   xpPenalty: number;
+  skillCode?: string | null;
 }
 
 export interface UpdateHabitData {
@@ -19,6 +20,7 @@ export interface UpdateHabitData {
   weekdays: number[];
   xpReward: number;
   xpPenalty: number;
+  skillCode?: string | null;
 }
 
 export type HabitWithUser = Habit & { user: { telegramId: bigint; timezone: string } };

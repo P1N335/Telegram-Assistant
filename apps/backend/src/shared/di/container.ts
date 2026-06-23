@@ -12,6 +12,7 @@ import type { IAchievementRepository } from "../../modules/gamification/achievem
 import type { IPetRepository } from "../../modules/pet/pet.repository.js";
 import type { IHabitRepository } from "../../modules/habits/habit.repository.js";
 import type { ISubscriptionRepository } from "../../modules/subscription/subscription.repository.js";
+import type { ISkillRepository } from "../../modules/skills/skill.repository.js";
 import type { UserService } from "../../modules/users/user.service.js";
 import type { AuthService } from "../../modules/users/auth.service.js";
 import type { TaskService } from "../../modules/tasks/task.service.js";
@@ -23,6 +24,7 @@ import type { AchievementService } from "../../modules/gamification/achievement.
 import type { PetService } from "../../modules/pet/pet.service.js";
 import type { HabitService } from "../../modules/habits/habit.service.js";
 import type { EntitlementService } from "../../modules/subscription/entitlement.service.js";
+import type { SkillService } from "../../modules/skills/skill.service.js";
 
 /**
  * Контейнер зависимостей (composition root собирает его в config/container.ts).
@@ -45,6 +47,7 @@ export interface AppContainer {
     pet: IPetRepository;
     habits: IHabitRepository;
     subscriptions: ISubscriptionRepository;
+    skills: ISkillRepository;
   };
   services: {
     auth: AuthService;
@@ -58,5 +61,6 @@ export interface AppContainer {
     pet: PetService;
     habits: HabitService;
     entitlements: EntitlementService;
+    skills: SkillService;
   };
 }

@@ -65,6 +65,7 @@ export interface TaskDto {
   dueDate: string | null; // ISO
   order: number;
   completedAt: string | null; // ISO
+  skillCode: string | null; // привязка к скиллу (Skill.code), null = без скилла
   subtasks: SubtaskDto[];
 }
 
@@ -103,12 +104,16 @@ export interface CreateTaskRequest {
   date?: string;
   /** Заголовки подзадач. */
   subtasks?: string[];
+  /** Привязка к скиллу (Skill.code); null/пусто — без скилла. */
+  skillCode?: string | null;
 }
 
 /** Частичное редактирование задачи. */
 export interface UpdateTaskRequest {
   title?: string;
   dueDate?: string | null;
+  /** Привязка к скиллу (Skill.code); null — снять привязку. */
+  skillCode?: string | null;
 }
 
 export interface CreateSubtaskRequest {
@@ -131,6 +136,7 @@ export interface HabitDto {
   weekdays: number[]; // ISO 1=Пн..7=Вс
   xpReward: number;
   xpPenalty: number;
+  skillCode: string | null; // привязка к скиллу (Skill.code), null = без скилла
   dueToday: boolean; // нужно ли выполнять сегодня по расписанию
   doneToday: boolean; // отмечена ли сегодня
 }
@@ -143,10 +149,40 @@ export interface CreateHabitRequest {
   weekdays?: number[]; // для WEEKLY (ISO 1..7)
   xpReward?: number;
   xpPenalty?: number;
+  /** Привязка к скиллу (Skill.code); null/пусто — без скилла. */
+  skillCode?: string | null;
 }
 
 /** Редактирование привычки — полный набор полей (как при создании, без startDate). */
 export type UpdateHabitRequest = CreateHabitRequest;
+
+export interface SkillDto {
+  id: string;
+  code: string;
+  name: string;
+  icon: string | null;
+  xp: number;
+  level: number;
+  xpIntoLevel: number;
+  xpForLevelSpan: number;
+  ratio: number; // 0..1 прогресс до след. уровня
+}
+
+export interface SkillTemplateDto {
+  code: string;
+  name: string;
+  icon: string | null;
+  description: string | null;
+  category: string | null;
+  added: boolean; // уже добавлен пользователем
+}
+
+/** Добавление скилла: из шаблона (code) или кастомный (name + icon). */
+export interface CreateSkillRequest {
+  code?: string;
+  name?: string;
+  icon?: string;
+}
 
 export interface AchievementDto {
   code: string;

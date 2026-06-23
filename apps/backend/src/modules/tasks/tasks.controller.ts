@@ -17,6 +17,8 @@ const PlanSchema = z
   })
   .refine((d) => d.text || (d.tasks && d.tasks.length > 0), { message: "Нужен text или непустой tasks" });
 
+const SkillCode = z.string().max(100).nullable().optional();
+
 const CreateSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
@@ -24,11 +26,13 @@ const CreateSchema = z.object({
   dueDate: z.string().datetime().nullable().optional(),
   date: DateStr.optional(),
   subtasks: z.array(z.string()).optional(),
+  skillCode: SkillCode,
 });
 
 const UpdateSchema = z.object({
   title: z.string().min(1).optional(),
   dueDate: z.string().datetime().nullable().optional(),
+  skillCode: SkillCode,
 });
 
 export function createTasksController(taskService: TaskService): Router {

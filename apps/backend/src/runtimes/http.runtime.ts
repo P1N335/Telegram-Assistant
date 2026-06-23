@@ -11,6 +11,7 @@ import { createSubtasksController } from "../modules/tasks/subtasks.controller.j
 import { createPetController } from "../modules/pet/pet.controller.js";
 import { createHabitsController } from "../modules/habits/habit.controller.js";
 import { createAchievementsController } from "../modules/gamification/achievements.controller.js";
+import { createSkillsController } from "../modules/skills/skill.controller.js";
 import { createPremiumController } from "../modules/subscription/premium.controller.js";
 import { createAdminController } from "../modules/subscription/admin.controller.js";
 import { createHomeController } from "../shared/http/home.controller.js";
@@ -40,6 +41,7 @@ export async function startHttpRuntime(c: AppContainer): Promise<() => Promise<v
   app.use("/api/pet", auth, createPetController(c.services.pet));
   app.use("/api/habits", auth, createHabitsController(c.services.habits));
   app.use("/api/achievements", auth, createAchievementsController(c.services.achievements));
+  app.use("/api/skills", auth, createSkillsController(c.services.skills));
   app.use("/api/premium", auth, createPremiumController(c.services.entitlements));
   app.use(
     "/api/home",

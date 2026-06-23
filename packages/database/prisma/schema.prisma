@@ -103,6 +103,7 @@ model User {
   pet           Pet?
   statistics    UserStatistics?
   subscription  Subscription?
+  skills        Skill[]
   achievements  UserAchievement[]
   notifications Notification[]
 
@@ -128,6 +129,11 @@ model Task {
   dueDate  DateTime? // опциональный дедлайн с датой и временем
   order    Int       @default(0)
 
+  // Опциональная привязка к скиллу (Skill.code). За первое выполнение задачи
+  // соответствующий скилл получает XP (см. модуль skills). Не FK: скилл может
+  // быть добавлен пользователем позже — начисление просто no-op, пока его нет.
+  skillCode String?
+
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   completedAt    DateTime?
@@ -141,6 +147,7 @@ model Task {
 
   @@index([userId, period, planDate]) // список задач периода
   @@index([userId, status])
+  @@index([userId, skillCode]) // агрегаты задач по скиллу
   @@index([dueDate]) // выборка для напоминаний
 }
 
@@ -182,6 +189,10 @@ model Habit {
   xpPenalty Int     @default(10)
   isActive  Boolean @default(true)
 
+  // Опциональная привязка к скиллу (Skill.code): выполнение привычки начисляет
+  // XP скиллу, снятие отметки — возвращает (см. модуль skills). Не FK (как у Task).
+  skillCode String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -222,6 +233,40 @@ model Subscription {
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ──────────────────────────────────────────────────────────────
+// Skill — развиваемая область пользователя (RPG-стиль): xp + level.
+// SkillTemplate — каталог/роадмап, откуда пользователь добавляет себе скиллы.
+// ──────────────────────────────────────────────────────────────
+
+model Skill {
+  id     String  @id @default(cuid())
+  userId String
+  code   String // код шаблона или кастомный
+  name   String
+  icon   String?
+  xp     Int     @default(0)
+  level  Int     @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, code])
+  @@index([userId])
+}
+
+model SkillTemplate {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  name        String
+  icon        String?
+  description String?
+  category    String?
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
 }
 
 // ──────────────────────────────────────────────────────────────

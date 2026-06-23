@@ -21,6 +21,7 @@ export class PrismaHabitRepository implements IHabitRepository {
         startDate: data.startDate,
         xpReward: data.xpReward,
         xpPenalty: data.xpPenalty,
+        skillCode: data.skillCode ?? null,
       },
     });
   }
@@ -36,6 +37,7 @@ export class PrismaHabitRepository implements IHabitRepository {
         weekdays: data.weekdays,
         xpReward: data.xpReward,
         xpPenalty: data.xpPenalty,
+        ...(data.skillCode !== undefined ? { skillCode: data.skillCode } : {}),
       },
     });
   }

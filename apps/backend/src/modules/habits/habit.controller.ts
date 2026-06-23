@@ -13,6 +13,7 @@ const CreateSchema = z.object({
   weekdays: z.array(z.number().int().min(1).max(7)).optional(),
   xpReward: z.number().int().min(0).max(100).optional(),
   xpPenalty: z.number().int().min(0).max(100).optional(),
+  skillCode: z.string().max(100).nullable().optional(),
 });
 
 export function createHabitsController(habitService: HabitService): Router {

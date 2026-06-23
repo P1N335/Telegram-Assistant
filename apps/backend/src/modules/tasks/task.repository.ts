@@ -12,6 +12,7 @@ export interface CreateTaskData {
   dueDate?: Date | null;
   order: number;
   subtaskTitles?: string[];
+  skillCode?: string | null;
 }
 
 export type TaskWithSubtasks = Task & { subtasks: Subtask[] };
@@ -40,7 +41,7 @@ export interface ITaskRepository {
   ): Promise<TaskWithSubtasks[]>;
   countForPeriod(userId: string, period: TaskPeriod, planDate: Date): Promise<number>;
   updateStatus(id: string, status: TaskStatus, completedAt: Date | null, markXpAwarded: boolean): Promise<Task>;
-  updateTask(id: string, data: { title?: string; dueDate?: Date | null }): Promise<Task>;
+  updateTask(id: string, data: { title?: string; dueDate?: Date | null; skillCode?: string | null }): Promise<Task>;
   delete(id: string): Promise<void>;
 
   // Напоминания

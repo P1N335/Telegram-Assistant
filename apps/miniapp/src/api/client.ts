@@ -11,6 +11,9 @@ import type {
   HabitDto,
   CreateHabitRequest,
   AchievementDto,
+  SkillDto,
+  SkillTemplateDto,
+  CreateSkillRequest,
 } from "@tpc/shared";
 import { getInitData } from "../lib/telegram.js";
 
@@ -105,4 +108,9 @@ export const api = {
   deleteHabit: (id: string) => request<void>(`/habits/${id}`, { method: "DELETE" }),
 
   getAchievements: () => request<{ achievements: AchievementDto[] }>("/achievements"),
+
+  getSkills: () => request<{ skills: SkillDto[] }>("/skills"),
+  getSkillRoadmap: () => request<{ roadmap: SkillTemplateDto[] }>("/skills/roadmap"),
+  addSkill: (body: CreateSkillRequest) =>
+    request<{ skill: SkillDto }>("/skills", { method: "POST", body: JSON.stringify(body) }),
 };

@@ -71,6 +71,7 @@ export class TaskService {
       dueDate,
       order: base,
       subtaskTitles: req.subtasks?.map((s) => s.trim()).filter(Boolean),
+      skillCode: normalizeSkillCode(req.skillCode),
     });
 
     // Создание задачи = активность сегодня (стрик/счётчики), XP «плана» — раз в день.
@@ -111,6 +112,7 @@ export class TaskService {
       status,
       previousStatus,
       firstCompletion,
+      skillCode: task.skillCode, // слой скиллов начислит XP при первом выполнении
     });
 
     // «Идеальный день» — только для дневных задач этого дня.
@@ -129,6 +131,7 @@ export class TaskService {
     const updated = await this.tasks.updateTask(taskId, {
       ...(req.title !== undefined ? { title: req.title.trim() } : {}),
       ...(req.dueDate !== undefined ? { dueDate: req.dueDate ? new Date(req.dueDate) : null } : {}),
+      ...(req.skillCode !== undefined ? { skillCode: normalizeSkillCode(req.skillCode) } : {}),
     });
     return TaskService.toDto(updated, task.subtasks);
   }
@@ -191,6 +194,7 @@ export class TaskService {
       dueDate: t.dueDate ? t.dueDate.toISOString() : null,
       order: t.order,
       completedAt: t.completedAt ? t.completedAt.toISOString() : null,
+      skillCode: t.skillCode,
       subtasks: subtasks.map(TaskService.subtaskDto),
     };
   }
@@ -198,4 +202,11 @@ export class TaskService {
   static subtaskDto(s: Subtask): SubtaskDto {
     return { id: s.id, title: s.title, isDone: s.isDone, order: s.order };
   }
+}
+
+/** Пустую строку трактуем как «без скилла» (null), иначе — обрезанный код. */
+function normalizeSkillCode(code: string | null | undefined): string | null {
+  if (code === undefined || code === null) return null;
+  const trimmed = code.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
