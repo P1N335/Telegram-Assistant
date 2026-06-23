@@ -67,7 +67,7 @@ done
 - [x] **Skills — начисление XP**: добавить скиллу опциональную связь, награждать XP скилла при
       выполнении задач/привычек, отмеченных этим скиллом (минимально: поле `skillCode` у задачи/привычки,
       событие → `Skill.xp += reward`, пересчёт уровня). Обновить градацию уровней.
-- [ ] **Лидерборд**: `GET /api/leaderboard` (топ по уровню/XP, и место пользователя),
+- [x] **Лидерборд**: `GET /api/leaderboard` (топ по уровню/XP, и место пользователя),
       экран/блок в профиле «рейтинг». Учесть масштаб (индекс, лимит, пагинация).
 - [ ] **Кастомизация пета (премиум)**: набор вариантов внешнего вида/имени; гейт `PET_CUSTOMIZATION`
       (`requireFeature` на бэке, `PremiumGate` на фронте). Бесплатным — дефолт.
@@ -108,3 +108,21 @@ done
   редакторе привычки (`HabitCircles.tsx`); метка скилла на `TaskCard.tsx`. Чистая логика начисления
   проверена изолированно (`node --experimental-strip-types`, все кейсы PASS). **Требуется `db push`**
   (изменена схема Prisma).
+- 2026-06-23 — Реализован **Лидерборд**. Schema: добавлен `@@index([xp])` на `UserStatistics`
+  (обратный скан под `ORDER BY xp DESC` + range-скан под `COUNT(xp > :me)` — иначе full scan под 100k+).
+  `@tpc/shared`: DTO `LeaderboardEntryDto`/`LeaderboardResponse`. Backend: новый модуль `leaderboard`
+  (`leaderboard.repository.ts` интерфейс `ILeaderboardRepository` — `topByXp`/`countAll`/
+  `countWithXpAbove`/`getRow`; `*.prisma.ts`; `leaderboard.service.ts`; `leaderboard.controller.ts`).
+  `GET /api/leaderboard?limit&offset` (zod-coerce query, `limit` кламп 1..100 деф.20, `offset>=0`),
+  возвращает `{ top, me, total, limit, offset }`. Ранжирование по `xp DESC` (уровень производен), по
+  всем `UserStatistics` без join/фильтра isActive (счётчики на одной таблице — индекс-дружелюбно).
+  Ранг топа — позиционный (`offset+i+1`); собственное место `me` — competition-ранг `count(xp>my)+1`,
+  но если пользователь на странице — переиспользуется его позиционный ранг (консистентность при ничьих).
+  Приватность: отдаём только `firstName`/`@username` (фолбэк «Пользователь»), без telegramId/фамилии.
+  Фича бесплатная (без premium-гейта). DI: репозиторий+сервис в `shared/di/container.ts` и
+  `config/container.ts`; контроллер примонтирован в `http.runtime.ts`. Frontend: `api.getLeaderboard`
+  в `client.ts`; секция `LeaderboardSection` в `ProfileScreen.tsx` (топ-10 строками `LeaderboardRow`
+  с медалями 🥇🥈🥉, подсветкой своей строки, «Ваше место: N из Total») + модалка `LeaderboardModal`
+  с подгрузкой по страницам (limit/offset, «Показать ещё»). Чистая логика ранга/клампа/пагинации
+  проверена изолированно (`node --experimental-strip-types`, 22/22 PASS). **Требуется `db push`**
+  (изменена схема Prisma — новый индекс).

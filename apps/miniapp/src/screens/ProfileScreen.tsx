@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AchievementDto, HomeResponse, SkillDto, SkillTemplateDto } from "@tpc/shared";
+import type {
+  AchievementDto,
+  HomeResponse,
+  LeaderboardEntryDto,
+  SkillDto,
+  SkillTemplateDto,
+} from "@tpc/shared";
 import { api, ApiError } from "../api/client.js";
 import { Card, Chip, ProgressBar } from "../components/ui.js";
 import { PetCard } from "../components/PetCard.js";
@@ -73,6 +79,9 @@ export function ProfileScreen({ data }: { data: HomeResponse; onChanged?: () => 
           ))}
         </div>
       </section>
+
+      {/* Рейтинг */}
+      <LeaderboardSection />
 
       {/* Питомец */}
       <section>
@@ -268,6 +277,164 @@ function SkillRoadmapModal({
           </div>
         )}
         <button onClick={onClose} className="bg-tg-secondaryBg mt-3 w-full rounded-xl py-2.5 text-sm">
+          Закрыть
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const LEADERBOARD_TOP = 10; // сколько строк показываем в профиле
+const LEADERBOARD_PAGE = 20; // размер страницы в модалке «Весь рейтинг»
+
+/** Рейтинг по XP: топ + собственное место. Данные грузятся независимо от Home. */
+function LeaderboardSection() {
+  const [top, setTop] = useState<LeaderboardEntryDto[]>([]);
+  const [me, setMe] = useState<LeaderboardEntryDto | null>(null);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    api
+      .getLeaderboard(LEADERBOARD_TOP)
+      .then((r) => {
+        setTop(r.top);
+        setMe(r.me);
+        setTotal(r.total);
+        setError("");
+      })
+      .catch(() => setError("Не удалось загрузить рейтинг"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Своя строка отдельно, только если пользователь не попал в видимый топ.
+  const meOutsideTop = me && !top.some((e) => e.isMe);
+
+  return (
+    <section>
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="text-tg-hint text-sm font-semibold uppercase">Рейтинг</h2>
+        {total > top.length && (
+          <button onClick={() => setShowAll(true)} className="text-tg-link text-sm">
+            Весь рейтинг ›
+          </button>
+        )}
+      </div>
+
+      {loading ? (
+        <Card>
+          <p className="text-tg-hint text-sm">Загрузка…</p>
+        </Card>
+      ) : error ? (
+        <Card>
+          <p className="text-tg-hint text-sm">{error}</p>
+        </Card>
+      ) : top.length === 0 ? (
+        <Card>
+          <p className="text-tg-hint text-sm">Пока никого нет в рейтинге — выполняйте задачи и поднимайтесь ⭐️</p>
+        </Card>
+      ) : (
+        <Card className="space-y-0.5">
+          {top.map((e) => (
+            <LeaderboardRow key={e.userId} entry={e} />
+          ))}
+          {meOutsideTop && (
+            <>
+              <div className="text-tg-hint py-0.5 text-center text-xs">···</div>
+              <LeaderboardRow entry={me} />
+            </>
+          )}
+          {me && (
+            <p className="text-tg-hint mt-2 text-center text-xs">
+              Ваше место: {me.rank} из {total}
+            </p>
+          )}
+        </Card>
+      )}
+
+      {showAll && <LeaderboardModal total={total} onClose={() => setShowAll(false)} />}
+    </section>
+  );
+}
+
+function LeaderboardRow({ entry }: { entry: LeaderboardEntryDto }) {
+  const medal = entry.rank === 1 ? "🥇" : entry.rank === 2 ? "🥈" : entry.rank === 3 ? "🥉" : null;
+  return (
+    <div className={`flex items-center gap-2.5 rounded-xl px-2 py-1.5 ${entry.isMe ? "bg-tg-button/10" : ""}`}>
+      <div className="w-7 shrink-0 text-center text-sm font-semibold">
+        {medal ?? <span className="text-tg-hint">{entry.rank}</span>}
+      </div>
+      <span className={`min-w-0 flex-1 truncate text-sm ${entry.isMe ? "font-semibold" : ""}`}>
+        {entry.name}
+        {entry.isMe && " (вы)"}
+      </span>
+      <span className="text-tg-hint shrink-0 text-xs">Ур. {entry.level}</span>
+      <span className="shrink-0 text-xs font-medium tabular-nums">{entry.xp} XP</span>
+    </div>
+  );
+}
+
+/** Полный рейтинг с подгрузкой по страницам (limit/offset) — масштаб под десятки тысяч. */
+function LeaderboardModal({ total, onClose }: { total: number; onClose: () => void }) {
+  const [entries, setEntries] = useState<LeaderboardEntryDto[]>([]);
+  const [me, setMe] = useState<LeaderboardEntryDto | null>(null);
+  const [offset, setOffset] = useState(0);
+  const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const fetchPage = useCallback(async (off: number) => {
+    setLoading(true);
+    try {
+      const r = await api.getLeaderboard(LEADERBOARD_PAGE, off);
+      setEntries((prev) => (off === 0 ? r.top : [...prev, ...r.top]));
+      setMe(r.me);
+      setOffset(off + r.top.length);
+      if (r.top.length === 0 || off + r.top.length >= r.total) setDone(true);
+      setError("");
+    } catch {
+      setError("Не удалось загрузить");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchPage(0);
+  }, [fetchPage]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
+      <div
+        className="bg-tg-bg max-h-[80vh] w-full overflow-y-auto rounded-t-2xl p-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="mb-3 font-semibold">Рейтинг · {total}</h3>
+        <div className="space-y-0.5">
+          {entries.map((e) => (
+            <LeaderboardRow key={e.userId} entry={e} />
+          ))}
+        </div>
+        {error && <p className="text-tg-hint mt-2 text-center text-sm">{error}</p>}
+        {!done && entries.length > 0 && (
+          <button
+            onClick={() => fetchPage(offset)}
+            disabled={loading}
+            className="bg-tg-secondaryBg mt-3 w-full rounded-xl py-2.5 text-sm disabled:opacity-60"
+          >
+            {loading ? "Загрузка…" : "Показать ещё"}
+          </button>
+        )}
+        {loading && entries.length === 0 && <p className="text-tg-hint text-sm">Загрузка…</p>}
+        {me && (
+          <p className="text-tg-hint mt-2 text-center text-xs">
+            Ваше место: {me.rank} из {total}
+          </p>
+        )}
+        <button onClick={onClose} className="bg-tg-button text-tg-buttonText mt-3 w-full rounded-xl py-2.5 text-sm">
           Закрыть
         </button>
       </div>

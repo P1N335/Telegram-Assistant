@@ -194,6 +194,29 @@ export interface AchievementDto {
   unlockedAt: string | null; // ISO
 }
 
+// ── Лидерборд ──
+// Рейтинг по XP (уровень — производная от XP, поэтому XP — более точный ключ сортировки).
+// Ранжирование идёт по всем пользователям (без фильтра isActive) — счётчики держатся на
+// одной таблице UserStatistics (без join к User), что индекс-дружелюбно под 100k+.
+
+export interface LeaderboardEntryDto {
+  rank: number; // 1-based место в рейтинге
+  userId: string;
+  name: string; // отображаемое имя (firstName → @username → «Пользователь»)
+  username: string | null;
+  level: number;
+  xp: number;
+  isMe: boolean; // строка текущего пользователя (для подсветки)
+}
+
+export interface LeaderboardResponse {
+  top: LeaderboardEntryDto[]; // страница рейтинга (limit/offset)
+  me: LeaderboardEntryDto | null; // место текущего пользователя (даже если вне страницы)
+  total: number; // всего ранжированных пользователей (для «место X из Y»)
+  limit: number;
+  offset: number;
+}
+
 export interface HomeResponse {
   user: UserDto;
   statistics: StatisticsDto;

@@ -13,6 +13,7 @@ import type { IPetRepository } from "../../modules/pet/pet.repository.js";
 import type { IHabitRepository } from "../../modules/habits/habit.repository.js";
 import type { ISubscriptionRepository } from "../../modules/subscription/subscription.repository.js";
 import type { ISkillRepository } from "../../modules/skills/skill.repository.js";
+import type { ILeaderboardRepository } from "../../modules/leaderboard/leaderboard.repository.js";
 import type { UserService } from "../../modules/users/user.service.js";
 import type { AuthService } from "../../modules/users/auth.service.js";
 import type { TaskService } from "../../modules/tasks/task.service.js";
@@ -25,6 +26,7 @@ import type { PetService } from "../../modules/pet/pet.service.js";
 import type { HabitService } from "../../modules/habits/habit.service.js";
 import type { EntitlementService } from "../../modules/subscription/entitlement.service.js";
 import type { SkillService } from "../../modules/skills/skill.service.js";
+import type { LeaderboardService } from "../../modules/leaderboard/leaderboard.service.js";
 
 /**
  * Контейнер зависимостей (composition root собирает его в config/container.ts).
@@ -48,6 +50,7 @@ export interface AppContainer {
     habits: IHabitRepository;
     subscriptions: ISubscriptionRepository;
     skills: ISkillRepository;
+    leaderboard: ILeaderboardRepository;
   };
   services: {
     auth: AuthService;
@@ -62,5 +65,6 @@ export interface AppContainer {
     habits: HabitService;
     entitlements: EntitlementService;
     skills: SkillService;
+    leaderboard: LeaderboardService;
   };
 }

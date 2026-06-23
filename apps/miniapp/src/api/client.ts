@@ -14,6 +14,7 @@ import type {
   SkillDto,
   SkillTemplateDto,
   CreateSkillRequest,
+  LeaderboardResponse,
 } from "@tpc/shared";
 import { getInitData } from "../lib/telegram.js";
 
@@ -113,4 +114,12 @@ export const api = {
   getSkillRoadmap: () => request<{ roadmap: SkillTemplateDto[] }>("/skills/roadmap"),
   addSkill: (body: CreateSkillRequest) =>
     request<{ skill: SkillDto }>("/skills", { method: "POST", body: JSON.stringify(body) }),
+
+  getLeaderboard: (limit?: number, offset?: number) => {
+    const q = new URLSearchParams();
+    if (limit !== undefined) q.set("limit", String(limit));
+    if (offset !== undefined) q.set("offset", String(offset));
+    const qs = q.toString();
+    return request<LeaderboardResponse>(`/leaderboard${qs ? `?${qs}` : ""}`);
+  },
 };

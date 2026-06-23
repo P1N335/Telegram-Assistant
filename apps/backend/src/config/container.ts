@@ -31,6 +31,8 @@ import { EntitlementService } from "../modules/subscription/entitlement.service.
 import { PrismaSkillRepository } from "../modules/skills/skill.repository.prisma.js";
 import { SkillService } from "../modules/skills/skill.service.js";
 import { registerSkills } from "../modules/skills/register.js";
+import { PrismaLeaderboardRepository } from "../modules/leaderboard/leaderboard.repository.prisma.js";
+import { LeaderboardService } from "../modules/leaderboard/leaderboard.service.js";
 
 /**
  * Composition root — единственное место связывания реализаций с сервисами через интерфейсы.
@@ -52,6 +54,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
   const habitRepository = new PrismaHabitRepository(prisma);
   const subscriptionRepository = new PrismaSubscriptionRepository(prisma);
   const skillRepository = new PrismaSkillRepository(prisma);
+  const leaderboardRepository = new PrismaLeaderboardRepository(prisma);
 
   // Infra
   const sender = new GrammyApiSender(env.TELEGRAM_BOT_TOKEN);
@@ -84,6 +87,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
   const habitService = new HabitService(habitRepository, userRepository, eventBus);
   const entitlementService = new EntitlementService(subscriptionRepository);
   const skillService = new SkillService(skillRepository);
+  const leaderboardService = new LeaderboardService(leaderboardRepository);
 
   // Подписки на доменные события
   registerGamification(eventBus, gamificationService, {
@@ -111,6 +115,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
       habits: habitRepository,
       subscriptions: subscriptionRepository,
       skills: skillRepository,
+      leaderboard: leaderboardRepository,
     },
     services: {
       auth: authService,
@@ -125,6 +130,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
       habits: habitService,
       entitlements: entitlementService,
       skills: skillService,
+      leaderboard: leaderboardService,
     },
   };
 }
