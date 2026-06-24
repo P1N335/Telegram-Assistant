@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { HomeResponse, TaskDto } from "@tpc/shared";
 import { api, authenticate, ApiError } from "./api/client.js";
 import { initTelegram, isInsideTelegram } from "./lib/telegram.js";
+import { useI18n } from "./i18n/index.js";
 import { BottomNav, type Tab } from "./components/BottomNav.js";
 import { Loader, ErrorState } from "./components/ui.js";
 import { HomeScreen } from "./screens/HomeScreen.js";
@@ -11,6 +12,7 @@ import { ProfileScreen } from "./screens/ProfileScreen.js";
 type Status = "loading" | "ready" | "error" | "no-telegram";
 
 export function App() {
+  const { t } = useI18n();
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState("");
   const [data, setData] = useState<HomeResponse | null>(null);
@@ -28,10 +30,10 @@ export function App() {
       setData(await api.getHome());
       setStatus("ready");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Не удалось загрузить данные");
+      setError(err instanceof ApiError ? err.message : t("app.loadError"));
       setStatus("error");
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     initTelegram();
@@ -72,7 +74,7 @@ export function App() {
 
   if (status === "loading") return <Loader />;
   if (status === "no-telegram")
-    return <ErrorState message="Откройте приложение через Telegram-бота." />;
+    return <ErrorState message={t("app.noTelegram")} />;
   if (status === "error" || !data)
     return <ErrorState message={error} onRetry={() => void boot()} />;
 
@@ -91,7 +93,7 @@ export function App() {
         {tab === "tasks" && <TasksScreen onChanged={refresh} />}
         {tab === "profile" && <ProfileScreen data={data} onChanged={refresh} />}
       </main>
-      <BottomNav active={tab} onChange={(t) => (t === "home" ? (setTab(t), void refresh()) : setTab(t))} />
+      <BottomNav active={tab} onChange={(next) => (next === "home" ? (setTab(next), void refresh()) : setTab(next))} />
     </div>
   );
 }

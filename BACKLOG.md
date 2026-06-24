@@ -69,10 +69,10 @@ done
       событие → `Skill.xp += reward`, пересчёт уровня). Обновить градацию уровней.
 - [x] **Лидерборд**: `GET /api/leaderboard` (топ по уровню/XP, и место пользователя),
       экран/блок в профиле «рейтинг». Учесть масштаб (индекс, лимит, пагинация).
-- [ ] **Кастомизация пета (премиум)**: набор вариантов внешнего вида/имени; гейт `PET_CUSTOMIZATION`
+- [x] **Кастомизация пета (премиум)**: набор вариантов внешнего вида/имени; гейт `PET_CUSTOMIZATION`
       (`requireFeature` на бэке, `PremiumGate` на фронте). Бесплатным — дефолт.
-- [ ] **Мульти-петы**: возможность иметь/выбирать несколько питомцев (премиум для >1), активный пет.
-- [ ] **i18n (англ)**: вынести строки UI в словарь (ru/en), выбор по `languageCode` Telegram; бот-тексты — позже.
+- [x] **Мульти-петы**: возможность иметь/выбирать несколько питомцев (премиум для >1), активный пет.
+- [x] **i18n (англ)**: вынести строки UI в словарь (ru/en), выбор по `languageCode` Telegram; бот-тексты — позже.
 - [ ] **AI-компаньон / утренние мотивационные тексты**: использовать `LLMProvider` для генерации
       утреннего текста на основе привычек/скиллов/стрика (через очередь/планировщик, graceful degradation).
 - [ ] **Месячный ревайнд**: агрегированный отчёт за месяц (выполнено, стрик, рост скиллов), раздаётся
@@ -126,3 +126,73 @@ done
   с подгрузкой по страницам (limit/offset, «Показать ещё»). Чистая логика ранга/клампа/пагинации
   проверена изолированно (`node --experimental-strip-types`, 22/22 PASS). **Требуется `db push`**
   (изменена схема Prisma — новый индекс).
+- 2026-06-24 — Реализована **Кастомизация пета (премиум)**. «Внешний вид» = выбор вида
+  (`PetSpecies`) из каталога — переиспользует существующую модель, уровень/XP/состояние
+  сохраняются, каталог расширяется через seed (без миграций). Schema Prisma **НЕ менялась**
+  (`Pet` уже имеет `name`+`speciesId`) → **`db push` НЕ нужен**. `@tpc/shared`: новый
+  `config/pet.ts` (`PET_NAME_MIN/MAX_LENGTH=1..24`); DTO `PetCustomizationOptionDto`/
+  `PetCustomizationDto`/`UpdatePetRequest`. Backend (модуль `pet`): чистая `sanitizePetName`
+  (trim+схлоп+длина) в `pet.rules.ts`; репозиторий — `listSpecies` (только `isActive`) +
+  `updateAppearance` (частичный patch имени/вида, возвращает с relations); сервис —
+  `getCustomization` (превью эмодзи под текущий уровень) и `customize` (валидация имени и
+  существования вида, идемпотентно, общий помощник `currentState` с decay). Контроллер:
+  `GET /api/pet/customization` (всем), `PATCH /api/pet` за `requireFeature(PET_CUSTOMIZATION)`
+  (free → 402 FEATURE_LOCKED); в `http.runtime` проброшен `entitlements`. Frontend:
+  `api.getPetCustomization`/`api.updatePet`; в `ProfileScreen` секция питомца вынесена в
+  `PetSection` с кнопкой «Кастомизация ›» → модалка `PetCustomizationModal` (имя + сетка
+  `VariantGrid`), для free — `PremiumGate` (превью+замок, форма скрыта); сохранение зовёт
+  `onChanged` (refresh Home). Seed: добавлены виды `fox`/`penguin` (идемпотентный upsert) —
+  богаче набор вариантов. Чистая логика `sanitizePetName` проверена изолированно
+  (`node --experimental-strip-types`, 8/8 PASS), скрипт импортов — без MISSING.
+  **`db push` НЕ нужен.** Рекомендуется (опц.) повторно запустить seed, чтобы появились
+  новые виды fox/penguin (cat/dragon работают и без этого).
+- 2026-06-24 — Реализованы **Мульти-петы**. Schema: `Pet.userId` больше НЕ `@unique`
+  (1:N), добавлено `isActive Boolean @default(true)` (активный = показываемый/растущий
+  питомец), индекс `@@index([userId, isActive])` (выборка активного + список/счётчик по
+  userId как prefix), связь `User.pet Pet?` → `User.pets Pet[]`. Инвариант «ровно один
+  активный на пользователя» держится на уровне приложения (атомарные транзакции), т.к.
+  Prisma не выражает частично-уникальные индексы. Обратносовместимо: существующие
+  питомцы получают `isActive=true` (становятся активными). `@tpc/shared`: фича
+  `PremiumFeature.MULTI_PET` (в `PLAN_FEATURES.PREMIUM`); константа `MAX_PETS_PER_USER=10`
+  (жёсткий потолок строк/пользователя — защита масштаба); DTO `PetSummaryDto`/
+  `PetCollectionDto`/`CreatePetRequest`. Backend (модуль `pet`): репозиторий —
+  `findActiveByUserId` (бывш. `findByUserId`, теперь `findFirst isActive`), `listByUserId`,
+  `countByUserId`, `findByIdForUser` (ownership), `createForUser(...,activate)` (в tx гасит
+  активность прочих), `setActive(userId,petId)` (tx). Сервис: `getOrCreate` теперь
+  активный-aware + самовосстановление (если активного нет, но питомцы есть — промоут
+  старейшего); `getCollection`/`createPet`/`activatePet`/`toSummary`; премиум сервис не
+  знает — гейт на роуте. Контроллер: `GET /api/pet/collection` (всем), `POST
+  /api/pet/collection` за `requireFeature(MULTI_PET)` (free→402), `POST
+  /api/pet/collection/:id/activate` (всем — выбор среди своих, чтобы downgrade не запирал
+  доступ). Награды (`reward`) идут активному питомцу (через `getOrCreate`). Frontend:
+  `api.getPetCollection/createPet/activatePet`; в `ProfileScreen` секция питомца получила
+  ссылку «Питомцы ›» → модалка `PetsModal` (список с выбором активного, бейдж «активный»,
+  «N/max») + `AddPetForm` (имя + вид из каталога) для премиума, для free —
+  `PremiumGate`-заглушка; смена активного зовёт `onChanged` (refresh Home/PetCard). Чистая
+  логика (инвариант одного активного, промоут, потолок, дефолты имени/вида, ownership,
+  идемпотентность активации) проверена изолированно (`node --experimental-strip-types`,
+  24/24 PASS); скрипт импортов — без MISSING. **Требуется `db push`** (изменена схема
+  Prisma: снят unique, новое поле `isActive`, новый индекс, связь 1:N).
+- 2026-06-24 — Реализован **i18n (ru/en)** для Mini App. Механизм — в `@tpc/shared`
+  (`config/i18n.ts`): тип `Locale`/`SUPPORTED_LOCALES`/`DEFAULT_LOCALE='ru'`,
+  `resolveLocale(languageCode)` (берёт первичный сабтег, фолбэк ru — консервативно/
+  обратносовместимо), `interpolate('{name}')`, `INTL_LOCALE` (BCP-47 для Intl) +
+  vitest-тест `i18n.test.ts`. Контент словарей — в приложении
+  (`apps/miniapp/src/i18n/strings.ts`): `ru` — источник правды по набору ключей
+  (`type TranslationKey = keyof typeof ru`), `en: Record<TranslationKey,string>`
+  обязан иметь те же ключи (компайл-тайм проверка паритета); плюрализуемые единицы
+  хранят все CLDR-формы (one/few/many/other). Провайдер/хук — `i18n/index.tsx`:
+  `I18nProvider` (язык резолвится 1 раз из Telegram `language_code`), `useI18n()` →
+  `{ locale, t, plural, formatDateTime }`; `plural` через `Intl.PluralRules` (без
+  зависимостей, корректные русские формы 1/2/5/11/21), `formatDateTime` — локаль-зависимый;
+  синглтон `getI18n()` доступен и вне React (используется в `api/client.ts` для фолбэка
+  HTTP-ошибки). В `lib/telegram.ts` добавлен `getLanguageCode()`; `<App/>` обёрнут в
+  `I18nProvider` (`main.tsx`). Все хардкод-строки UI заменены на `t()` в App, BottomNav,
+  ui (Loader/ErrorState), Home/Tasks/Profile, TaskCard/TaskItem-не-треб, HabitCircles,
+  PetCard, PremiumGate, SkillSelect (даты — `formatDateTime`, числительные — `plural`,
+  параметры — `{placeholders}`). Бэкенд-контент (имена скиллов, стадии/фразы питомца,
+  тексты достижений) НЕ локализуется — это «бот-тексты», поздний этап. `lib/pet-view.ts`
+  (метки настроения) опустошён — перенесено в словарь (`pet.moodLabel.*`). Чистая логика
+  (resolveLocale/interpolate/plural ru+en/паритет ключей) проверена изолированно
+  (`node --experimental-strip-types`, 34/34 PASS); скрипт импортов — без MISSING.
+  Изменён только фронт + `@tpc/shared`; **схема Prisma НЕ менялась → `db push` НЕ нужен.**

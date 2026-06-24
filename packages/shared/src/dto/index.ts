@@ -36,6 +36,61 @@ export interface PetDto {
   phrase: string;
 }
 
+// ── Кастомизация питомца (премиум: PremiumFeature.PET_CUSTOMIZATION) ──
+// «Внешний вид» = выбор вида (PetSpecies) из каталога; уровень/XP/состояние сохраняются.
+// Каталог расширяется через seed (без миграций). Бесплатным — дефолт (без изменения).
+
+/** Вариант внешнего вида питомца (вид из каталога) с превью под текущий уровень. */
+export interface PetCustomizationOptionDto {
+  speciesCode: string;
+  name: string; // имя вида («Котёнок», «Дракончик»…)
+  emoji: string; // превью на текущем уровне питомца
+  description: string | null;
+}
+
+/** Доступные варианты + текущий выбор пользователя. */
+export interface PetCustomizationDto {
+  options: PetCustomizationOptionDto[];
+  current: { speciesCode: string; name: string };
+}
+
+/** Изменение имени и/или внешнего вида (вид) питомца. Поля опциональны. */
+export interface UpdatePetRequest {
+  name?: string; // 1..PET_NAME_MAX_LENGTH после trim
+  speciesCode?: string; // код вида из каталога
+}
+
+// ── Мульти-петы (премиум: PremiumFeature.MULTI_PET) ──
+// У пользователя может быть несколько питомцев; ровно один активен (растёт и
+// показывается на главной). Создание >1 — премиум; переключение активного среди
+// уже имеющихся — бесплатно (downgrade не запирает доступ к собственным питомцам).
+
+/** Краткая карточка питомца в коллекции пользователя. */
+export interface PetSummaryDto {
+  id: string;
+  name: string;
+  speciesCode: string;
+  emoji: string; // превью на уровне этого питомца
+  stageTitle: string;
+  level: number;
+  xp: number;
+  isActive: boolean;
+}
+
+/** Коллекция питомцев пользователя + активный + лимиты. */
+export interface PetCollectionDto {
+  pets: PetSummaryDto[];
+  activePetId: string;
+  maxPets: number; // потолок (MAX_PETS_PER_USER) — для UI «N / max»
+  canAddMore: boolean; // pets.length < maxPets (премиум-гейт всё равно на сервере)
+}
+
+/** Создание дополнительного питомца (премиум). Поля опциональны (есть дефолты). */
+export interface CreatePetRequest {
+  name?: string; // 1..PET_NAME_MAX_LENGTH после trim; по умолчанию — имя вида
+  speciesCode?: string; // код вида из каталога; по умолчанию — вид по умолчанию
+}
+
 export interface UserDto {
   id: string;
   telegramId: string; // BigInt сериализуется строкой

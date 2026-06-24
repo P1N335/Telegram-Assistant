@@ -13,6 +13,11 @@ export function getTelegramUserName(): string {
   return getWebApp()?.initDataUnsafe?.user?.first_name ?? "друг";
 }
 
+/** Код языка пользователя из Telegram (напр. "en", "ru", "en-US"), если передан. */
+export function getLanguageCode(): string | undefined {
+  return getWebApp()?.initDataUnsafe?.user?.language_code;
+}
+
 /** URL аватарки из Telegram, если клиент его передал (доступен не всегда). */
 export function getTelegramPhotoUrl(): string | undefined {
   return getWebApp()?.initDataUnsafe?.user?.photo_url;

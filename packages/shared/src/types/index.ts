@@ -58,5 +58,7 @@ export type SubscriptionPlan = (typeof SubscriptionPlan)[keyof typeof Subscripti
 /** Реестр платных фич. Добавление новой механики = новая запись здесь. */
 export const PremiumFeature = {
   PET_CUSTOMIZATION: "PET_CUSTOMIZATION",
+  /** Несколько питомцев (>1). Бесплатно — ровно один авто-созданный питомец. */
+  MULTI_PET: "MULTI_PET",
 } as const;
 export type PremiumFeature = (typeof PremiumFeature)[keyof typeof PremiumFeature];

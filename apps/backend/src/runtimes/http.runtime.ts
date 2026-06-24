@@ -39,7 +39,7 @@ export async function startHttpRuntime(c: AppContainer): Promise<() => Promise<v
   app.use("/api/users", auth, createUsersController(c.services.users, c.services.entitlements));
   app.use("/api/tasks", auth, createTasksController(c.services.tasks));
   app.use("/api/subtasks", auth, createSubtasksController(c.services.tasks));
-  app.use("/api/pet", auth, createPetController(c.services.pet));
+  app.use("/api/pet", auth, createPetController(c.services.pet, c.services.entitlements));
   app.use("/api/habits", auth, createHabitsController(c.services.habits));
   app.use("/api/achievements", auth, createAchievementsController(c.services.achievements));
   app.use("/api/skills", auth, createSkillsController(c.services.skills));

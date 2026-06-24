@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
+import { useI18n } from "../i18n/index.js";
 
-export function Loader({ label = "Загрузка…" }: { label?: string }) {
+export function Loader({ label }: { label?: string }) {
+  const { t } = useI18n();
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 p-8">
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-tg-hint border-t-tg-button" />
-      <span className="text-tg-hint text-sm">{label}</span>
+      <span className="text-tg-hint text-sm">{label ?? t("common.loading")}</span>
     </div>
   );
 }
@@ -37,13 +39,14 @@ export function ProgressBar({ value }: { value: number }) {
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
       <span className="text-3xl">😕</span>
       <p className="text-tg-hint text-sm">{message}</p>
       {onRetry && (
         <button onClick={onRetry} className="bg-tg-button text-tg-buttonText rounded-xl px-4 py-2 text-sm">
-          Повторить
+          {t("common.retry")}
         </button>
       )}
     </div>

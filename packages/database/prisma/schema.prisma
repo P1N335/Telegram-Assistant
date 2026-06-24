@@ -92,6 +92,9 @@ model User {
   morningHour Int? // переопределение глобального MORNING_HOUR
   eveningHour Int?
 
+  // Вечернее подведение итогов (рефлексия) — можно отключить командой /itogi.
+  eveningEnabled Boolean @default(true)
+
   isActive Boolean @default(true) // false = бот заблокирован/пользователь ушёл
 
   createdAt DateTime @default(now())
@@ -100,7 +103,7 @@ model User {
   tasks         Task[]
   habits        Habit[]
   dailyReports  DailyReport[]
-  pet           Pet?
+  pets          Pet[]
   statistics    UserStatistics?
   subscription  Subscription?
   skills        Skill[]
@@ -364,13 +367,20 @@ model PetSpecies {
 
 // ──────────────────────────────────────────────────────────────
 // Pet — инстанс питомца пользователя (медленно меняющиеся данные).
+// Мульти-петы: у пользователя может быть несколько питомцев (>1 — премиум,
+// PremiumFeature.MULTI_PET), ровно один из них «активный» (isActive=true) —
+// именно он растёт на доменных событиях и показывается на главной. Инвариант
+// «ровно один активный на пользователя» поддерживается на уровне приложения
+// (атомарное переключение в транзакции), а не уникальным индексом, т.к.
+// Prisma не выражает частично-уникальные индексы декларативно.
 // ──────────────────────────────────────────────────────────────
 
 model Pet {
-  id        String @id @default(cuid())
-  userId    String @unique // один активный питомец на пользователя (можно расширить позже)
+  id        String  @id @default(cuid())
+  userId    String // НЕ unique: один пользователь — много питомцев
   speciesId String
   name      String
+  isActive  Boolean @default(true) // активный (показываемый/растущий) питомец
 
   level Int @default(1)
   xp    Int @default(0)
@@ -382,6 +392,7 @@ model Pet {
   species PetSpecies @relation(fields: [speciesId], references: [id])
   state   PetState?
 
+  @@index([userId, isActive]) // выборка активного питомца + список/счётчик по userId (prefix)
   @@index([speciesId])
 }
 

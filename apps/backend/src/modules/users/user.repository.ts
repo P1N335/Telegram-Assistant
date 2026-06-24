@@ -9,7 +9,9 @@ export interface CreateUserInput {
   timezone?: string;
 }
 
-export type UpdateUserInput = Partial<Pick<User, "username" | "firstName" | "lastName" | "timezone" | "isActive" | "morningHour" | "eveningHour">>;
+export type UpdateUserInput = Partial<
+  Pick<User, "username" | "firstName" | "lastName" | "timezone" | "isActive" | "morningHour" | "eveningHour" | "eveningEnabled">
+>;
 
 /**
  * Контракт доступа к пользователям. Сервисы зависят от него, а не от Prisma (DIP).

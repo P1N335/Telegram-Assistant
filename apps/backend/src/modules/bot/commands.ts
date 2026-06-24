@@ -48,4 +48,19 @@ export function registerCommands(bot: Bot<BotContext>, c: AppContainer): void {
   bot.command("reflect", async (ctx) => {
     await startReflection(ctx);
   });
+
+  // Вкл/выкл вечернее подведение итогов. /itogi [on|off] — без аргумента переключает.
+  bot.command("itogi", async (ctx) => {
+    const user = await resolveUser(c, ctx);
+    if (!user) return;
+    const arg = (ctx.match ?? "").trim().toLowerCase();
+    const enabled =
+      arg === "on" || arg === "вкл"
+        ? true
+        : arg === "off" || arg === "выкл"
+          ? false
+          : !user.eveningEnabled; // тоггл
+    await c.services.users.setEveningEnabled(user.id, enabled);
+    await ctx.reply(TEXT.itogiToggled(enabled));
+  });
 }

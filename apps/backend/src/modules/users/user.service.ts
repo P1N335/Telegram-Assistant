@@ -42,6 +42,12 @@ export class UserService {
     return stats;
   }
 
+  /** Вкл/выкл вечернее подведение итогов. Возвращает новое состояние. */
+  async setEveningEnabled(userId: string, enabled: boolean): Promise<boolean> {
+    await this.repo.update(userId, { eveningEnabled: enabled });
+    return enabled;
+  }
+
   static toDto(user: User): UserDto {
     return {
       id: user.id,

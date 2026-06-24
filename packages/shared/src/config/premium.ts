@@ -6,5 +6,5 @@ import { PremiumFeature, type SubscriptionPlan } from "../types/index.js";
  */
 export const PLAN_FEATURES: Record<SubscriptionPlan, PremiumFeature[]> = {
   FREE: [],
-  PREMIUM: [PremiumFeature.PET_CUSTOMIZATION],
+  PREMIUM: [PremiumFeature.PET_CUSTOMIZATION, PremiumFeature.MULTI_PET],
 };

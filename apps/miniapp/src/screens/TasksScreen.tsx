@@ -4,15 +4,12 @@ import { api } from "../api/client.js";
 import { Loader } from "../components/ui.js";
 import { TaskCard } from "../components/TaskCard.js";
 import { SkillSelect } from "../components/SkillSelect.js";
+import { useI18n } from "../i18n/index.js";
 
-const PERIODS: Array<{ id: TaskPeriod; label: string }> = [
-  { id: "DAY", label: "День" },
-  { id: "WEEK", label: "Неделя" },
-  { id: "MONTH", label: "Месяц" },
-  { id: "YEAR", label: "Год" },
-];
+const PERIODS: TaskPeriod[] = ["DAY", "WEEK", "MONTH", "YEAR"];
 
 export function TasksScreen({ onChanged }: { onChanged?: () => void }) {
+  const { t } = useI18n();
   const [period, setPeriod] = useState<TaskPeriod>("DAY");
   const [tasks, setTasks] = useState<TaskDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,42 +67,40 @@ export function TasksScreen({ onChanged }: { onChanged?: () => void }) {
     setFormOpen(false);
   };
 
-  const active = tasks.filter((t) => t.status !== "COMPLETED").length;
-  const completed = tasks.filter((t) => t.status === "COMPLETED").length;
+  const active = tasks.filter((tk) => tk.status !== "COMPLETED").length;
+  const completed = tasks.filter((tk) => tk.status === "COMPLETED").length;
 
   return (
     <div className="space-y-4 p-4">
       <header>
-        <h1 className="text-xl font-bold">Мои задачи</h1>
-        <p className="text-tg-hint text-sm">Планируйте задачи на разные периоды</p>
+        <h1 className="text-xl font-bold">{t("tasks.title")}</h1>
+        <p className="text-tg-hint text-sm">{t("tasks.subtitle")}</p>
       </header>
 
       <div className="bg-tg-secondaryBg grid grid-cols-4 gap-1 rounded-2xl p-1">
         {PERIODS.map((p) => (
           <button
-            key={p.id}
-            onClick={() => setPeriod(p.id)}
+            key={p}
+            onClick={() => setPeriod(p)}
             className={`rounded-xl py-2 text-sm font-medium transition ${
-              period === p.id ? "bg-tg-bg shadow-sm" : "text-tg-hint"
+              period === p ? "bg-tg-bg shadow-sm" : "text-tg-hint"
             }`}
           >
-            {p.label}
+            {t(`period.${p}`)}
           </button>
         ))}
       </div>
 
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-semibold">Задачи: {PERIODS.find((p) => p.id === period)?.label}</h2>
-          <p className="text-tg-hint text-xs">
-            {active} активных, {completed} выполнено
-          </p>
+          <h2 className="font-semibold">{t("tasks.listTitle", { period: t(`period.${period}`) })}</h2>
+          <p className="text-tg-hint text-xs">{t("tasks.counts", { active, completed })}</p>
         </div>
         <button
           onClick={() => setFormOpen((v) => !v)}
           className="bg-tg-button text-tg-buttonText rounded-xl px-3 py-2 text-sm font-medium"
         >
-          + Новая задача
+          {t("tasks.new")}
         </button>
       </div>
 
@@ -114,7 +109,7 @@ export function TasksScreen({ onChanged }: { onChanged?: () => void }) {
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Что нужно сделать?"
+            placeholder={t("tasks.titlePlaceholder")}
             className="bg-tg-bg w-full rounded-xl px-3 py-2 text-sm outline-none"
           />
           <div className="flex gap-2">
@@ -132,15 +127,13 @@ export function TasksScreen({ onChanged }: { onChanged?: () => void }) {
             />
           </div>
           <SkillSelect skills={skills} value={skillCode} onChange={setSkillCode} disabled={busy} />
-          <p className="text-tg-hint text-xs">
-            Если указать дату и время — бот напомнит примерно за час до дедлайна.
-          </p>
+          <p className="text-tg-hint text-xs">{t("tasks.reminderHint")}</p>
           <button
             onClick={createTask}
             disabled={busy || !title.trim()}
             className="bg-tg-button text-tg-buttonText w-full rounded-xl py-2.5 text-sm font-medium disabled:opacity-40"
           >
-            Создать
+            {t("common.create")}
           </button>
         </div>
       )}
@@ -148,15 +141,15 @@ export function TasksScreen({ onChanged }: { onChanged?: () => void }) {
       {loading ? (
         <Loader />
       ) : tasks.length === 0 ? (
-        <p className="text-tg-hint py-8 text-center text-sm">Нет задач. Создайте первую задачу!</p>
+        <p className="text-tg-hint py-8 text-center text-sm">{t("tasks.empty")}</p>
       ) : (
         <div className="space-y-2">
-          {tasks.map((t) => (
+          {tasks.map((tk) => (
             <TaskCard
-              key={t.id}
-              task={t}
+              key={tk.id}
+              task={tk}
               busy={busy}
-              skill={t.skillCode ? skillByCode.get(t.skillCode) : undefined}
+              skill={tk.skillCode ? skillByCode.get(tk.skillCode) : undefined}
               onToggle={(task) =>
                 run(() =>
                   api.setTaskStatus(task.id, task.status === "COMPLETED" ? "PENDING" : "COMPLETED"),

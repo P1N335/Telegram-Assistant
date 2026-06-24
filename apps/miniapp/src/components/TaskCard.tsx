@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { TaskDto } from "@tpc/shared";
 import { Card } from "./ui.js";
+import { useI18n } from "../i18n/index.js";
 
 interface Props {
   task: TaskDto;
@@ -13,11 +14,6 @@ interface Props {
   onAddSubtask: (taskId: string, title: string) => void;
   onToggleSubtask: (id: string, isDone: boolean) => void;
   onDeleteSubtask: (id: string) => void;
-}
-
-function formatDue(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
 function splitIso(iso: string | null): { date: string; time: string } {
@@ -41,6 +37,7 @@ export function TaskCard({
   onToggleSubtask,
   onDeleteSubtask,
 }: Props) {
+  const { t, formatDateTime } = useI18n();
   const done = task.status === "COMPLETED";
   const [subDraft, setSubDraft] = useState("");
   const [openSubs, setOpenSubs] = useState(false);
@@ -89,12 +86,14 @@ export function TaskCard({
                 <span className="max-w-24 truncate">{skill.name}</span>
               </span>
             )}
-            {task.dueDate && <span>🕒 {formatDue(task.dueDate)}</span>}
+            {task.dueDate && <span>🕒 {formatDateTime(task.dueDate)}</span>}
             <button onClick={() => setOpenMove((v) => !v)} className="underline">
-              перенести
+              {t("taskCard.reschedule")}
             </button>
             <button onClick={() => setOpenSubs((v) => !v)} className="underline">
-              {task.subtasks.length > 0 ? `подзадачи ${doneCount}/${task.subtasks.length}` : "+ подзадача"}
+              {task.subtasks.length > 0
+                ? t("taskCard.subtasks", { done: doneCount, total: task.subtasks.length })
+                : t("taskCard.addSubtask")}
             </button>
           </div>
 
@@ -119,7 +118,7 @@ export function TaskCard({
                 disabled={busy || !mDate}
                 className="bg-tg-button text-tg-buttonText w-full rounded-lg py-1.5 text-sm disabled:opacity-40"
               >
-                Перенести
+                {t("taskCard.rescheduleConfirm")}
               </button>
             </div>
           )}
@@ -147,11 +146,11 @@ export function TaskCard({
                   value={subDraft}
                   onChange={(e) => setSubDraft(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addSub()}
-                  placeholder="Новая подзадача"
+                  placeholder={t("taskCard.subtaskPlaceholder")}
                   className="bg-tg-bg flex-1 rounded-lg px-2 py-1 text-sm outline-none"
                 />
                 <button onClick={addSub} disabled={busy} className="text-tg-link text-sm">
-                  Добавить
+                  {t("common.add")}
                 </button>
               </div>
             </div>

@@ -1,15 +1,3 @@
-import type { PetMoodLabel } from "@tpc/shared";
-
-/** Человекочитаемая метка настроения питомца для UI. */
-export function moodLabelRu(label: PetMoodLabel): string {
-  switch (label) {
-    case "happy":
-      return "Счастлив";
-    case "neutral":
-      return "В норме";
-    case "sad":
-      return "Грустит";
-    case "tired":
-      return "Устал";
-  }
-}
+// Метки настроения питомца перенесены в словарь i18n (ключи `pet.moodLabel.*`,
+// см. i18n/strings.ts) и берутся через useI18n().t(...). Файл оставлен пустым.
+export {};

@@ -53,6 +53,50 @@ async function main() {
     },
   });
 
+  await prisma.petSpecies.upsert({
+    where: { code: "fox" },
+    update: {},
+    create: {
+      code: "fox",
+      name: "Лисёнок",
+      description: "Хитрый и шустрый помощник в делах",
+      baseEnergy: 110,
+      stages: [
+        { minLevel: 1, emoji: "🥚", title: "Яйцо" },
+        { minLevel: 3, emoji: "🦊", title: "Лисёнок" },
+        { minLevel: 10, emoji: "🦊", title: "Лис" },
+      ],
+      phrases: {
+        happy: ["Хитро придумано! 🦊", "Мы всех опередим!"],
+        neutral: ["Какой план на сегодня?", "С чего начнём охоту за делами?"],
+        sad: ["Без тебя норка пустеет…"],
+        tired: ["Передохну минутку…"],
+      },
+    },
+  });
+
+  await prisma.petSpecies.upsert({
+    where: { code: "penguin" },
+    update: {},
+    create: {
+      code: "penguin",
+      name: "Пингвинёнок",
+      description: "Спокойный и упорный — шаг за шагом к цели",
+      baseEnergy: 100,
+      stages: [
+        { minLevel: 1, emoji: "🥚", title: "Яйцо" },
+        { minLevel: 3, emoji: "🐧", title: "Пингвинёнок" },
+        { minLevel: 10, emoji: "🐧", title: "Пингвин" },
+      ],
+      phrases: {
+        happy: ["Шаг за шагом — и мы на вершине! 🐧", "Отличный темп!"],
+        neutral: ["Какой план на сегодня?", "Двигаемся дальше?"],
+        sad: ["На льдине одиноко без тебя…"],
+        tired: ["Нужно согреться и отдохнуть"],
+      },
+    },
+  });
+
   // ── Каталог достижений ──
   const achievements = [
     { code: "first_plan", title: "Первый план", description: "Создан первый план дня", icon: "📝", category: "tasks", threshold: 1, xpReward: 20 },

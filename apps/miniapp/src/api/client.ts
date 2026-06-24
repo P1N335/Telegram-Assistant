@@ -15,8 +15,14 @@ import type {
   SkillTemplateDto,
   CreateSkillRequest,
   LeaderboardResponse,
+  PetDto,
+  PetCustomizationDto,
+  UpdatePetRequest,
+  PetCollectionDto,
+  CreatePetRequest,
 } from "@tpc/shared";
 import { getInitData } from "../lib/telegram.js";
+import { getI18n } from "../i18n/index.js";
 
 // В dev — относительный "/api" (проксируется Vite). На GitHub Pages фронт статичен и
 // ходит на отдельный бэкенд: задаётся при сборке через VITE_API_BASE_URL (вкл. /api),
@@ -46,7 +52,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { ...init, headers });
   if (!res.ok) {
     let code = "HTTP_ERROR";
-    let message = `Ошибка ${res.status}`;
+    let message = getI18n().t("common.httpError", { status: res.status });
     try {
       const body = (await res.json()) as ApiErrorResponse;
       code = body.error?.code ?? code;
@@ -114,6 +120,19 @@ export const api = {
   getSkillRoadmap: () => request<{ roadmap: SkillTemplateDto[] }>("/skills/roadmap"),
   addSkill: (body: CreateSkillRequest) =>
     request<{ skill: SkillDto }>("/skills", { method: "POST", body: JSON.stringify(body) }),
+
+  getPetCustomization: () => request<{ customization: PetCustomizationDto }>("/pet/customization"),
+  updatePet: (body: UpdatePetRequest) =>
+    request<{ pet: PetDto }>("/pet", { method: "PATCH", body: JSON.stringify(body) }),
+
+  getPetCollection: () => request<{ collection: PetCollectionDto }>("/pet/collection"),
+  createPet: (body: CreatePetRequest) =>
+    request<{ collection: PetCollectionDto }>("/pet/collection", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  activatePet: (id: string) =>
+    request<{ collection: PetCollectionDto }>(`/pet/collection/${id}/activate`, { method: "POST" }),
 
   getLeaderboard: (limit?: number, offset?: number) => {
     const q = new URLSearchParams();

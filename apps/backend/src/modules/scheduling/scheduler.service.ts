@@ -148,7 +148,9 @@ export class SchedulerService {
       return h !== null && safeLocalHour(u.timezone, now) === h;
     });
 
-    const due = dedupeById([...defaults, ...overridden]);
+    let due = dedupeById([...defaults, ...overridden]);
+    // Вечернее подведение итогов можно отключить командой /itogi.
+    if (kind === "evening") due = due.filter((u) => u.eveningEnabled);
     if (due.length === 0) return;
 
     this.logger.info({ kind, count: due.length }, "Планировщик: рассылка");

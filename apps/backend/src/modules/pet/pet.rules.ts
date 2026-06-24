@@ -1,6 +1,19 @@
-import type { PetMoodLabel } from "@tpc/shared";
+import { PET_NAME_MAX_LENGTH, PET_NAME_MIN_LENGTH, type PetMoodLabel } from "@tpc/shared";
 
 /** Чистые правила питомца — тестируются без БД. */
+
+/**
+ * Нормализация и валидация имени питомца (кастомизация, премиум). Чистая функция:
+ * trim + схлопывание пробелов + контроль длины. `ok=false` — имя пустое/слишком длинное.
+ */
+export function sanitizePetName(
+  raw: string,
+  max: number = PET_NAME_MAX_LENGTH,
+): { ok: boolean; value: string } {
+  const value = raw.replace(/\s+/g, " ").trim();
+  const ok = value.length >= PET_NAME_MIN_LENGTH && value.length <= max;
+  return { ok, value };
+}
 
 /** Скорость угасания за час отсутствия взаимодействия. */
 export const DECAY = { moodPerHour: 1, energyPerHour: 1.5 };

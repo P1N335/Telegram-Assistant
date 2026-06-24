@@ -2,16 +2,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { HabitDto, HabitCadence, CreateHabitRequest, SkillDto } from "@tpc/shared";
 import { api } from "../api/client.js";
 import { SkillSelect } from "./SkillSelect.js";
+import { useI18n } from "../i18n/index.js";
 
 const WEEKDAYS = [
-  { id: 1, label: "Пн" },
-  { id: 2, label: "Вт" },
-  { id: 3, label: "Ср" },
-  { id: 4, label: "Чт" },
-  { id: 5, label: "Пт" },
-  { id: 6, label: "Сб" },
-  { id: 7, label: "Вс" },
-];
+  { id: 1, key: "mon" },
+  { id: 2, key: "tue" },
+  { id: 3, key: "wed" },
+  { id: 4, key: "thu" },
+  { id: 5, key: "fri" },
+  { id: 6, key: "sat" },
+  { id: 7, key: "sun" },
+] as const;
 
 /** Кружок одной привычки: тап = выполнить, долгое нажатие = редактор. */
 function HabitCircle({
@@ -68,6 +69,7 @@ function HabitCircle({
 }
 
 function AddCircle({ onClick }: { onClick: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col items-center gap-1">
       <button
@@ -76,7 +78,7 @@ function AddCircle({ onClick }: { onClick: () => void }) {
       >
         +
       </button>
-      <span className="text-tg-hint text-[11px]">Добавить</span>
+      <span className="text-tg-hint text-[11px]">{t("common.add")}</span>
     </div>
   );
 }
@@ -87,6 +89,7 @@ interface EditorState {
 }
 
 export function HabitCircles({ onChanged }: { onChanged?: () => void }) {
+  const { t } = useI18n();
   const [habits, setHabits] = useState<HabitDto[]>([]);
   const [skills, setSkills] = useState<SkillDto[]>([]);
   const [busy, setBusy] = useState(false);
@@ -123,7 +126,7 @@ export function HabitCircles({ onChanged }: { onChanged?: () => void }) {
 
   return (
     <section>
-      <h2 className="mb-2 font-semibold">Привычки</h2>
+      <h2 className="mb-2 font-semibold">{t("habits.title")}</h2>
       <div className="grid grid-cols-4 gap-3">
         {habits.map((h) => (
           <HabitCircle
@@ -180,6 +183,7 @@ function HabitEditor({
   onSubmit: (body: CreateHabitRequest) => void;
   onDelete?: () => void;
 }) {
+  const { t } = useI18n();
   const h = state.habit;
   const [title, setTitle] = useState(h?.title ?? "");
   const [time, setTime] = useState(h?.timeOfDay ?? "09:00");
@@ -206,17 +210,19 @@ function HabitEditor({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="bg-tg-bg w-full max-w-sm space-y-3 rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-semibold">{state.mode === "edit" ? "Привычка" : "Новая привычка"}</h3>
+        <h3 className="font-semibold">
+          {state.mode === "edit" ? t("habits.editTitle") : t("habits.createTitle")}
+        </h3>
 
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Название"
+          placeholder={t("habits.namePlaceholder")}
           className="bg-tg-secondaryBg w-full rounded-xl px-3 py-2 text-sm outline-none"
         />
 
         <div className="flex items-center gap-2">
-          <span className="text-tg-hint text-sm">Время</span>
+          <span className="text-tg-hint text-sm">{t("habits.time")}</span>
           <input
             type="time"
             value={time}
@@ -232,14 +238,14 @@ function HabitEditor({
               onClick={() => setCadence(c)}
               className={`rounded-lg py-1.5 text-xs ${cadence === c ? "bg-tg-button text-tg-buttonText" : "bg-tg-secondaryBg"}`}
             >
-              {c === "DAILY" ? "Каждый день" : c === "EVERY_N_DAYS" ? "Раз в N дн." : "По дням"}
+              {t(`habits.cadence.${c}`)}
             </button>
           ))}
         </div>
 
         {cadence === "EVERY_N_DAYS" && (
           <div className="flex items-center gap-2">
-            <span className="text-tg-hint text-sm">Каждые</span>
+            <span className="text-tg-hint text-sm">{t("habits.everyPrefix")}</span>
             <input
               type="number"
               min={1}
@@ -247,7 +253,7 @@ function HabitEditor({
               onChange={(e) => setIntervalDays(Math.max(1, Number(e.target.value)))}
               className="bg-tg-secondaryBg w-16 rounded-xl px-2 py-1 text-sm outline-none"
             />
-            <span className="text-tg-hint text-sm">дн.</span>
+            <span className="text-tg-hint text-sm">{t("habits.daysShort")}</span>
           </div>
         )}
 
@@ -259,7 +265,7 @@ function HabitEditor({
                 onClick={() => toggleWeekday(w.id)}
                 className={`rounded-lg px-2.5 py-1 text-xs ${weekdays.includes(w.id) ? "bg-tg-button text-tg-buttonText" : "bg-tg-secondaryBg"}`}
               >
-                {w.label}
+                {t(`weekday.${w.key}`)}
               </button>
             ))}
           </div>
@@ -267,7 +273,7 @@ function HabitEditor({
 
         {skills.length > 0 && (
           <div className="space-y-1">
-            <span className="text-tg-hint text-sm">Скилл</span>
+            <span className="text-tg-hint text-sm">{t("habits.skill")}</span>
             <SkillSelect
               skills={skills}
               value={skillCode}
@@ -284,7 +290,7 @@ function HabitEditor({
             disabled={busy || !valid}
             className="bg-tg-button text-tg-buttonText flex-1 rounded-xl py-2.5 text-sm font-medium disabled:opacity-40"
           >
-            Сохранить
+            {t("common.save")}
           </button>
           {onDelete && (
             <button onClick={onDelete} disabled={busy} className="bg-tg-secondaryBg rounded-xl px-4 py-2.5 text-sm">
