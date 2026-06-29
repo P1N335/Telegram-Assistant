@@ -22,6 +22,13 @@ const EnvSchema = z.object({
   TELEGRAM_WEBHOOK_SECRET: z.string().optional(),
   MINI_APP_URL: z.string().url(),
 
+  // Троттлинг рассылки под лимит Telegram (≈30 msg/s глобально на бота). Сглаживает
+  // почасовой всплеск, чтобы не словить 429. 0 = без лимита. Бакет допускает короткий
+  // всплеск до TELEGRAM_SEND_BURST, затем держит устойчивые TELEGRAM_MAX_MSGS_PER_SEC.
+  TELEGRAM_MAX_MSGS_PER_SEC: z.coerce.number().min(0).max(1000).default(30),
+  // Ёмкость бакета (макс. мгновенный всплеск). По умолчанию = скорости. 0 → = скорости.
+  TELEGRAM_SEND_BURST: z.coerce.number().min(0).max(1000).default(30),
+
   JWT_SECRET: z.string().min(16),
   JWT_TTL: z.string().default("15m"),
 
@@ -41,6 +48,18 @@ const EnvSchema = z.object({
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
   OLLAMA_BASE_URL: z.string().optional(),
   OLLAMA_MODEL: z.string().optional(),
+
+  // AI-утро: персонализация утренней рассылки текстом от LLMProvider. Строго opt-in —
+  // по умолчанию выкл., чтобы не менять текущее поведение и не тратить токены без спроса.
+  // Работает только при AI_PROVIDER != noop. Парсим boolean явно (см. TELEGRAM_USE_WEBHOOK).
+  AI_MORNING_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
+  // Бюджет времени на один LLM-вызов в тике (мс): превышение → фолбэк на статичный текст.
+  AI_MORNING_TIMEOUT_MS: z.coerce.number().int().positive().default(4000),
+  // Параллелизм генерации внутри тика: не открываем тысячи одновременных запросов под 100k+.
+  AI_MORNING_CONCURRENCY: z.coerce.number().int().min(1).max(50).default(4),
 
   DEFAULT_TIMEZONE: z.string().default("Europe/Moscow"),
   MORNING_HOUR: z.coerce.number().int().min(0).max(23).default(8),

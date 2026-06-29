@@ -1,12 +1,15 @@
 import type { Env } from "../../config/env.js";
 import type { Logger } from "../logger.js";
-import type { CoachingInput, LLMProvider } from "./llm-provider.js";
-import { buildCoachingPrompt } from "./prompt.js";
+import type { CoachingInput, LLMProvider, MorningInput } from "./llm-provider.js";
+import { buildCoachingPrompt, buildMorningPrompt } from "./prompt.js";
 
 /** Заглушка: AI отключён. Возвращает пусто — вызывающий код деградирует мягко. */
 export class NoopLLMProvider implements LLMProvider {
   readonly name = "noop";
   async generateCoaching(): Promise<string> {
+    return "";
+  }
+  async generateMorningMotivation(): Promise<string> {
     return "";
   }
 }
@@ -19,8 +22,16 @@ export class OpenAIProvider implements LLMProvider {
     private readonly logger: Logger,
   ) {}
 
-  async generateCoaching(input: CoachingInput): Promise<string> {
-    const { system, user } = buildCoachingPrompt(input);
+  generateCoaching(input: CoachingInput): Promise<string> {
+    return this.chat(buildCoachingPrompt(input));
+  }
+
+  generateMorningMotivation(input: MorningInput): Promise<string> {
+    return this.chat(buildMorningPrompt(input));
+  }
+
+  /** Единый вызов chat-completions: оба сценария используют один транспорт. */
+  private async chat({ system, user }: { system: string; user: string }): Promise<string> {
     try {
       const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -43,7 +54,7 @@ export class OpenAIProvider implements LLMProvider {
       return data.choices?.[0]?.message?.content?.trim() ?? "";
     } catch (err) {
       this.logger.warn({ err }, "OpenAI: запрос упал");
-      return ""; // graceful degradation — рефлексия сохранится без инсайта
+      return ""; // graceful degradation — основной флоу не блокируется отсутствием AI
     }
   }
 }
@@ -56,8 +67,15 @@ export class OllamaProvider implements LLMProvider {
     private readonly logger: Logger,
   ) {}
 
-  async generateCoaching(input: CoachingInput): Promise<string> {
-    const { system, user } = buildCoachingPrompt(input);
+  generateCoaching(input: CoachingInput): Promise<string> {
+    return this.chat(buildCoachingPrompt(input));
+  }
+
+  generateMorningMotivation(input: MorningInput): Promise<string> {
+    return this.chat(buildMorningPrompt(input));
+  }
+
+  private async chat({ system, user }: { system: string; user: string }): Promise<string> {
     try {
       const res = await fetch(`${this.baseUrl}/api/chat`, {
         method: "POST",

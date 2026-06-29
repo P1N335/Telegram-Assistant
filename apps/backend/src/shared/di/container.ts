@@ -14,11 +14,14 @@ import type { IHabitRepository } from "../../modules/habits/habit.repository.js"
 import type { ISubscriptionRepository } from "../../modules/subscription/subscription.repository.js";
 import type { ISkillRepository } from "../../modules/skills/skill.repository.js";
 import type { ILeaderboardRepository } from "../../modules/leaderboard/leaderboard.repository.js";
+import type { IRewindRepository } from "../../modules/rewind/rewind.repository.js";
 import type { UserService } from "../../modules/users/user.service.js";
 import type { AuthService } from "../../modules/users/auth.service.js";
 import type { TaskService } from "../../modules/tasks/task.service.js";
 import type { ReflectionService } from "../../modules/reflection/reflection.service.js";
 import type { NotificationService } from "../../modules/notifications/notification.service.js";
+import type { MorningCompanionService } from "../../modules/companion/morning-companion.service.js";
+import type { MonthlyRewindService } from "../../modules/rewind/monthly-rewind.service.js";
 import type { SchedulerService } from "../../modules/scheduling/scheduler.service.js";
 import type { GamificationService } from "../../modules/gamification/gamification.service.js";
 import type { AchievementService } from "../../modules/gamification/achievement.service.js";
@@ -51,6 +54,7 @@ export interface AppContainer {
     subscriptions: ISubscriptionRepository;
     skills: ISkillRepository;
     leaderboard: ILeaderboardRepository;
+    rewind: IRewindRepository;
   };
   services: {
     auth: AuthService;
@@ -58,6 +62,8 @@ export interface AppContainer {
     tasks: TaskService;
     reflection: ReflectionService;
     notifications: NotificationService;
+    morningCompanion: MorningCompanionService;
+    monthlyRewind: MonthlyRewindService;
     scheduler: SchedulerService;
     gamification: GamificationService;
     achievements: AchievementService;

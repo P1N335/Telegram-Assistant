@@ -7,7 +7,9 @@ export function PetCard({ pet, compact = false }: { pet: PetDto; compact?: boole
   return (
     <Card>
       <div className="flex items-center gap-4">
-        <span className={compact ? "text-4xl" : "text-6xl"}>{pet.emoji}</span>
+        <span className={`pet-emoji pet-anim-${pet.moodLabel} ${compact ? "text-4xl" : "text-6xl"}`}>
+          {pet.emoji}
+        </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between">
             <p className="font-semibold">{pet.name}</p>

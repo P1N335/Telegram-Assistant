@@ -32,4 +32,6 @@ export interface IUserRepository {
   findDefaultDue(kind: "morning" | "evening", timezones: string[]): Promise<User[]>;
   /** Активные пользователи с персональным override часа (фильтруются по локальному часу в сервисе). */
   findOverriddenDue(kind: "morning" | "evening"): Promise<User[]>;
+  /** Все активные пользователи в указанных таймзонах (для месячного ревайнда). */
+  findActiveByTimezones(timezones: string[]): Promise<User[]>;
 }

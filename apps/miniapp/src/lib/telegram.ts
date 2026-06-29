@@ -34,3 +34,12 @@ export function initTelegram(): void {
 export function isInsideTelegram(): boolean {
   return Boolean(getWebApp()?.initData);
 }
+
+/** Тактильный отклик (если клиент поддерживает). Безопасен вне Telegram — no-op. */
+export function triggerHaptic(type: "success" | "warning" | "error" = "success"): void {
+  try {
+    getWebApp()?.HapticFeedback?.notificationOccurred(type);
+  } catch {
+    /* HapticFeedback недоступен — игнорируем */
+  }
+}

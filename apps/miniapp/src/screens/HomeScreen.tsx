@@ -51,6 +51,12 @@ export function HomeScreen({ data, onStatus, onPlan, onChanged, busy }: Props) {
         {data.premium.active && <Chip icon="⭐" label="Premium" />}
       </div>
 
+      {data.daily?.allDone && (
+        <div className="bg-tg-button text-tg-buttonText rounded-2xl p-3 text-center text-sm font-semibold">
+          ✅ {t("home.allDoneBanner")}
+        </div>
+      )}
+
       <Card>
         <div className="text-tg-hint mb-2 flex justify-between text-sm">
           <span>{t("home.progressToLevel", { level: lvl.level + 1 })}</span>

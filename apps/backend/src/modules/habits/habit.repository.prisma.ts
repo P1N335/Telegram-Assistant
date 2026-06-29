@@ -1,6 +1,7 @@
 import { Prisma, type Habit, type PrismaClient } from "@tpc/database";
 import type {
   CreateHabitData,
+  HabitDueWindow,
   HabitWithUser,
   IHabitRepository,
   UpdateHabitData,
@@ -53,9 +54,28 @@ export class PrismaHabitRepository implements IHabitRepository {
     });
   }
 
-  listAllActiveWithUser(): Promise<HabitWithUser[]> {
+  listActiveDueInWindows(windows: HabitDueWindow[]): Promise<HabitWithUser[]> {
+    const nonEmpty = windows.filter((w) => w.timezones.length > 0);
+    if (nonEmpty.length === 0) return Promise.resolve([]);
+    // Каждый OR-кляуз связывает диапазон времени со своей группой таймзон, поэтому
+    // привычка матчится, только если ОБА условия её окна выполнены (без перекрёста
+    // между группами). Диапазон по `timeOfDay` опирается на индекс (isActive,timeOfDay).
     return this.prisma.habit.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        OR: nonEmpty.map((w) => ({
+          timeOfDay: { gte: w.gte, lte: w.lte },
+          user: { timezone: { in: w.timezones } },
+        })),
+      },
+      include: { user: { select: { telegramId: true, timezone: true } } },
+    });
+  }
+
+  listActiveByTimezones(timezones: string[]): Promise<HabitWithUser[]> {
+    if (timezones.length === 0) return Promise.resolve([]);
+    return this.prisma.habit.findMany({
+      where: { isActive: true, user: { timezone: { in: timezones } } },
       include: { user: { select: { telegramId: true, timezone: true } } },
     });
   }

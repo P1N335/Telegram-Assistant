@@ -73,13 +73,13 @@ done
       (`requireFeature` на бэке, `PremiumGate` на фронте). Бесплатным — дефолт.
 - [x] **Мульти-петы**: возможность иметь/выбирать несколько питомцев (премиум для >1), активный пет.
 - [x] **i18n (англ)**: вынести строки UI в словарь (ru/en), выбор по `languageCode` Telegram; бот-тексты — позже.
-- [ ] **AI-компаньон / утренние мотивационные тексты**: использовать `LLMProvider` для генерации
+- [x] **AI-компаньон / утренние мотивационные тексты**: использовать `LLMProvider` для генерации
       утреннего текста на основе привычек/скиллов/стрика (через очередь/планировщик, graceful degradation).
-- [ ] **Месячный ревайнд**: агрегированный отчёт за месяц (выполнено, стрик, рост скиллов), раздаётся
+- [x] **Месячный ревайнд**: агрегированный отчёт за месяц (выполнено, стрик, рост скиллов), раздаётся
       в конце месяца через планировщик (идемпотентно по `dedupeKey`).
-- [ ] **Надёжность/масштаб**: троттлинг рассылки под лимит Telegram (~30 msg/s) + оптимизация скана
+- [x] **Надёжность/масштаб**: троттлинг рассылки под лимит Telegram (~30 msg/s) + оптимизация скана
       привычек (выбирать только попадающие в окно времени), чтобы тянуть десятки тысяч пользователей.
-- [ ] **Красивый UI / события**: анимации пета, событие level-up, событие «все привычки/задачи закрыты сегодня».
+- [x] **Красивый UI / события**: анимации пета, событие level-up, событие «все привычки/задачи закрыты сегодня».
 
 ## Журнал прогресса
 
@@ -196,3 +196,120 @@ done
   (resolveLocale/interpolate/plural ru+en/паритет ключей) проверена изолированно
   (`node --experimental-strip-types`, 34/34 PASS); скрипт импортов — без MISSING.
   Изменён только фронт + `@tpc/shared`; **схема Prisma НЕ менялась → `db push` НЕ нужен.**
+- 2026-06-24 — Реализован **AI-компаньон / утренние мотивационные тексты**. Расширен
+  `LLMProvider`: новый `MorningInput` + метод `generateMorningMotivation` (реализован в
+  Noop/OpenAI/Ollama; в OpenAI/Ollama выделен общий приватный `chat()` — транспорт не
+  дублируется между коучингом и утром); `buildMorningPrompt(input)` в `ai/prompt.ts`
+  (локаль-зависимый system ru/en через первичный сабтег, мягкая деградация при пустых
+  привычках/скиллах). Новый сервис `modules/companion/MorningCompanionService`
+  (`buildMorningText(user, localDate) → string | null`): собирает стрик
+  (`UserStatistics`), привычки на сегодня (`listActiveByUser` + `isDueOn`, без БД-правил),
+  топ-3 скилла (сорт по level↓, xp↓), локаль (`resolveLocale`), зовёт LLM под таймаут,
+  возвращает текст или `null` (фолбэк). Изолирован как отдельный сервис → при росте его
+  дёргает BullMQ-воркер per-user без правки логики. Планировщик: утро персонализируется
+  (`MORNING_PLAN`-сообщение = AI-текст + `TEXT.morningCta`, либо статичный `TEXT.morning`);
+  генерация идёт с ограниченным параллелизмом (`mapWithConcurrency`) и таймаутом
+  (`withTimeout`) — новые чистые утилиты `shared/async.ts`, чтобы дорогой LLM не блокировал
+  почасовой тик под 100k+. Идемпотентность не изменена (`dedupeKey = userId:morning:date`,
+  одно сообщение в любой ветке). Фича строго **opt-in** и обратносовместима: env
+  `AI_MORNING_ENABLED=false` по умолчанию + требует `AI_PROVIDER != noop` → текущая утренняя
+  рассылка не меняется, пока владелец не включит; добавлены `AI_MORNING_TIMEOUT_MS=4000`,
+  `AI_MORNING_CONCURRENCY=4` (только в `.env.example`). DI: сервис собран в
+  `config/container.ts` и описан в `shared/di/container.ts` (`services.morningCompanion`).
+  Фронтенд не требуется (доставка — бот, не Mini App). Чистая логика (withTimeout/
+  mapWithConcurrency/buildMorningPrompt ru+en/гейтинг+фолбэк+сбор контекста сервиса)
+  проверена изолированно на верных копиях (`node --experimental-transform-types`, 29/29
+  PASS — strip-only режим не поддерживает parameter properties); скрипт импортов — без
+  MISSING. **Схема Prisma НЕ менялась → `db push` НЕ нужен.**
+- 2026-06-24 — Реализован **Месячный ревайнд**. Schema: добавлено значение `MONTHLY_REWIND`
+  в enum `NotificationType` (аддитивно, обратносовместимо). `@tpc/shared`: новый
+  `config/rewind.ts` (`REWIND_TOP_SKILLS=3`); DTO `MonthlyRewindDto`/`RewindSkillDto`
+  (контракт держим в shared — переиспользуемо, если позже появится экран ревайнда; сейчас
+  рендерится в текст бота). Backend — новый модуль `rewind`: чистый `rewind.rules.ts`
+  (`previousMonthAnchor` — арифметика якорей предыдущего месяца над YYYY-MM-DD, с
+  переходом года; `skillXpGains` — XP скиллам за месяц, зеркало `skills/register.ts`:
+  задача `+SKILL_XP_REWARDS.TASK_COMPLETED`, привычка `+xpReward`; `topSkills` — топ по
+  росту с фолбэком уровня/имени; `isEmptyRewind`, `totalSkillXpGained`); репозиторий
+  `IRewindRepository.aggregateMonth` (+`*.prisma.ts`): `tasksCompleted` (count по
+  `completedAt`∈месяц), `taskSkillCounts` (groupBy `skillCode`), `habitCompletions`
+  (отметки за месяц + `habit.skillCode/xpReward`) — две разные границы: ts-инстанты
+  (`periodRange` MONTH) для `Task.completedAt`, и `@db.Date`-границы (`toDateOnly`
+  YYYY-MM-01) для `HabitCompletion.date`; все запросы префиксованы `userId`.
+  `MonthlyRewindService.buildRewind(user, localToday)` собирает DTO (стрик из
+  `UserStatistics`, имена/уровни из `Skill`), возвращает `null` при пустом месяце
+  (пустой отчёт не шлём) и никогда не бросает. Планировщик: `runMonthlyRewind` гейтит
+  себя на локальную полночь 1-го числа (только таймзоны, где `localHour==0` и дата
+  оканчивается на `-01` → почти всегда ранний выход без обхода юзеров), затем
+  `findActiveByTimezones` + рассылка с `mapWithConcurrency(REWIND_CONCURRENCY=8)` под
+  лимит соединений; идемпотентность — `dedupeKey=userId:rewind:YYYY-MM`, тип
+  `MONTHLY_REWIND`, кнопка `miniAppButton`. Добавлен `IUserRepository.findActiveByTimezones`.
+  DI: репозиторий+сервис в `config/container.ts` и `shared/di/container.ts`
+  (`repositories.rewind`, `services.monthlyRewind`), сервис проброшен в `SchedulerService`;
+  hourly-cron в `scheduler.runtime.ts` зовёт `runMonthlyRewind`. Фронтенд не требуется
+  (доставка — бот). Бот-текст `TEXT.rewind` — RU (локализация бот-текстов — поздний этап).
+  Чистая логика проверена изолированно (`node --experimental-strip-types`, 19/19 PASS);
+  скрипт импортов — без MISSING. **Требуется `db push`** (изменена схема Prisma — новое
+  значение enum).
+- 2026-06-25 — Реализована **Надёжность/масштаб** (троттлинг рассылки + оконный скан
+  привычек). (1) Троттлинг: новый чистый `shared/rate-limiter.ts` (token-bucket с
+  инъекцией часов — `acquire()`, всплеск до `burst`, затем устойчивые `ratePerSec`,
+  FIFO-очередь ожидающих, `unref`-таймер) + декоратор `RateLimitedSender` в
+  `notifications/message-sender.ts` (прозрачно оборачивает `IMessageSender`). Весь
+  трафик (утро/вечер/напоминания/ревайнд) идёт через `NotificationService →
+  IMessageSender`, поэтому лимит — глобальный на процесс. Env: `TELEGRAM_MAX_MSGS_PER_SEC`
+  (деф. 30), `TELEGRAM_SEND_BURST` (деф. 30); 0 = без лимита; в `config/container.ts`
+  декоратор подключается только при rate>0 (обратносовместимо, в `.env.example`
+  задокументировано). Архитектурная заметка: in-process лимитер достаточен для текущего
+  одно-процессного планировщика; при нескольких worker-процессах под 100k+ выносится в
+  общий лимитер (Redis/BullMQ) — интерфейс `acquire()` не меняется. (2) Оконный скан:
+  раньше `runHabitReminders`/`runHabitRollover` тянули ВСЕ активные привычки каждый тик.
+  Теперь — выборка по окну: новый `time.ts` `getLocalHhmm` (zero-padded "HH:MM" с защитой
+  от "24:00"); чистые `habit.rules.ts` `hhmmToMinutes`/`minutesToHhmm`/`reminderBand`
+  (+ конфиг `HABIT_REMINDER_LOOKAHEAD_MIN=15`/`HABIT_MISSED_AFTER_MIN=60`/
+  `HABIT_MISSED_WINDOW_MIN=60`) строят инклюзивный диапазон `timeOfDay`, покрывающий
+  все привычки, чьё напоминание (r15/r60) может сработать в этот тик. Планировщик
+  группирует активные таймзоны по совпадающему окну (`buildReminderWindows`) и зовёт
+  новый репозиторий `listActiveDueInWindows(windows)` (OR групп «таймзоны+диапазон
+  timeOfDay»); rollover зовёт `listActiveByTimezones` только для таймзон в локальной
+  полуночи. Точные условия r15/r60 применяются к узкому предотобранному набору; окно —
+  надмножество, поэтому границы можно слегка «щедрить». **Изменение поведения (намеренно,
+  под масштаб):** пинг «не отмечено» (r60) теперь шлётся в окне [+60..+120) мин после
+  времени (устойчиво к ~12 пропущенным тикам), а не «в любой момент до конца дня»;
+  идемпотентность не изменена (`dedupeKey=habit:id:r60:date`). Убран неиспользуемый
+  `IHabitRepository.listAllActiveWithUser`. Schema: добавлен индекс
+  `Habit @@index([isActive, timeOfDay])` (range-скан окна вместо полного скана).
+  Чистая логика проверена изолированно на верных копиях (`node --experimental-strip-types`):
+  RateLimiter (всплеск/устойчивая скорость/FIFO/unlimited) — 6/6 PASS; band/hhmm/
+  getLocalHhmm/группировка/свойство-надмножество/ограниченный r60 — 27/27 PASS (итого
+  33/33). Скрипт импортов — без MISSING. **Требуется `db push`** (изменена схема Prisma —
+  новый индекс).
+- 2026-06-25 — Реализован **Красивый UI / события** (последний пункт очереди). Три части,
+  все обратносовместимо и без правки схемы Prisma. (1) **Анимации пета**: чистый CSS в
+  `apps/miniapp/src/index.css` (кейфреймы `pet-idle/pet-happy/pet-sad` + классы
+  `.pet-anim-<moodLabel>`), `PetCard.tsx` навешивает класс по `pet.moodLabel`
+  (happy/neutral/sad/tired); уважается `prefers-reduced-motion` (анимации выключаются).
+  (2) **Событие level-up** и (3) **событие «всё закрыто сегодня»** — UI-празднования
+  (оверлей с «поп»-карточкой + CSS-конфетти, без зависимостей): новый
+  `components/Celebration.tsx` (`CelebrationOverlay` + тип `Celebration`), авто-гашение
+  ~2.6 c, тап для закрытия, тактильный отклик `triggerHaptic` (новый хелпер в
+  `lib/telegram.ts`, безопасный no-op вне Telegram). Детектор в `App.tsx`: сравнивает
+  `statistics.level` и `daily.allDone` между обновлениями Home через `useRef`-снимок;
+  первая загрузка лишь ставит базлайн (не празднуем уже-выполненное при открытии),
+  level-up — при росте уровня, all-done — при переходе false→true; очередь празднований
+  с уникальными id (React key → корректный ремаунт/перезапуск таймера). Источник флага
+  «всё закрыто» — новое производное поле `HomeResponse.daily` (DTO `DailyCompletionDto`
+  в `@tpc/shared`): счётчики дневных задач (COMPLETED) и привычек на сегодня (dueToday/
+  doneToday) + `allDone` (есть ≥1 пункт и все закрыты — зеркало семантики «идеального
+  дня»). Бэкенд: чистый `shared/http/daily-completion.ts` (`computeDailyCompletion(tasks,
+  habits)`), `home.controller.ts` теперь инжектит `HabitService` (`listForToday`) и кладёт
+  `daily` в ответ; в `http.runtime.ts` проброшен `c.services.habits`. На главной — баннер
+  «всё закрыто» (`home.allDoneBanner`). Новые ключи i18n (ru/en): `home.allDoneBanner`,
+  `celebrate.levelUp.*`, `celebrate.allDone.*`. Архзаметка: «событие» трактуется как
+  UI-празднование (производное от `daily.allDone`/уровня), без нового доменного события и
+  без дубля бот-уведомлений (level-up в бот уже шлёт `gamification/register.ts`). Защита
+  от рассинхрона деплоя (Pages раньше бэкенда): чтения `daily` через опц. цепочку
+  (`data.daily?.allDone`). Чистая логика проверена изолированно (`node
+  --experimental-strip-types`): `computeDailyCompletion` — 10/10 PASS, детектор переходов
+  празднований — 9/9 PASS. Скрипт импортов — без MISSING. **`db push` НЕ нужен** (схема
+  Prisma не менялась). Контракт `HomeResponse` расширен аддитивно — нужна пересборка
+  бэкенда и Pages (см. итог запуска). Очередь пуста — бэклог завершён.

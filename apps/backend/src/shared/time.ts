@@ -30,6 +30,23 @@ export function getLocalHour(timezone: string, at: Date = new Date()): number {
   return Number(hh) % 24;
 }
 
+/**
+ * Локальное время пользователя как zero-padded "HH:MM" (00:00..23:59).
+ * Лексикографически сравнимо с `Habit.timeOfDay` → используется планировщиком для
+ * оконной выборки привычек по времени дня. hourCycle h23 + `%24` страхуют от "24:00".
+ */
+export function getLocalHhmm(timezone: string, at: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(at);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  const hh = String(Number(get("hour")) % 24).padStart(2, "0");
+  return `${hh}:${get("minute")}`;
+}
+
 /** YYYY-MM-DD → Date (полночь UTC) для хранения в полях @db.Date. */
 export function toDateOnly(dateStr: string): Date {
   return new Date(`${dateStr}T00:00:00.000Z`);

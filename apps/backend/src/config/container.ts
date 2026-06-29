@@ -10,13 +10,17 @@ import { PrismaReflectionRepository } from "../modules/reflection/reflection.rep
 import { PrismaNotificationRepository } from "../modules/notifications/notification.repository.prisma.js";
 import { PrismaGamificationRepository } from "../modules/gamification/gamification.repository.prisma.js";
 import { PrismaAchievementRepository } from "../modules/gamification/achievement.repository.prisma.js";
-import { GrammyApiSender } from "../modules/notifications/message-sender.js";
+import { GrammyApiSender, RateLimitedSender } from "../modules/notifications/message-sender.js";
+import { RateLimiter } from "../shared/rate-limiter.js";
 import { UserService } from "../modules/users/user.service.js";
 import { AuthService } from "../modules/users/auth.service.js";
 import { TaskService } from "../modules/tasks/task.service.js";
 import { TaskParser } from "../modules/tasks/task.parser.js";
 import { ReflectionService } from "../modules/reflection/reflection.service.js";
 import { NotificationService } from "../modules/notifications/notification.service.js";
+import { MorningCompanionService } from "../modules/companion/morning-companion.service.js";
+import { PrismaRewindRepository } from "../modules/rewind/rewind.repository.prisma.js";
+import { MonthlyRewindService } from "../modules/rewind/monthly-rewind.service.js";
 import { SchedulerService } from "../modules/scheduling/scheduler.service.js";
 import { GamificationService } from "../modules/gamification/gamification.service.js";
 import { AchievementService } from "../modules/gamification/achievement.service.js";
@@ -55,9 +59,22 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
   const subscriptionRepository = new PrismaSubscriptionRepository(prisma);
   const skillRepository = new PrismaSkillRepository(prisma);
   const leaderboardRepository = new PrismaLeaderboardRepository(prisma);
+  const rewindRepository = new PrismaRewindRepository(prisma);
 
   // Infra
-  const sender = new GrammyApiSender(env.TELEGRAM_BOT_TOKEN);
+  // Базовый отправитель + троттлинг под лимит Telegram (если включён). Декоратор
+  // прозрачен: NotificationService и подписчики видят тот же IMessageSender.
+  const baseSender = new GrammyApiSender(env.TELEGRAM_BOT_TOKEN);
+  const sender =
+    env.TELEGRAM_MAX_MSGS_PER_SEC > 0
+      ? new RateLimitedSender(
+          baseSender,
+          new RateLimiter({
+            ratePerSec: env.TELEGRAM_MAX_MSGS_PER_SEC,
+            burst: env.TELEGRAM_SEND_BURST || env.TELEGRAM_MAX_MSGS_PER_SEC,
+          }),
+        )
+      : baseSender;
 
   // Services
   const userService = new UserService(userRepository, env.DEFAULT_TIMEZONE);
@@ -72,11 +89,27 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
     logger,
   );
   const notificationService = new NotificationService(notificationRepository, sender, logger);
+  const morningCompanionService = new MorningCompanionService(
+    userRepository,
+    habitRepository,
+    skillRepository,
+    ai,
+    env,
+    logger,
+  );
+  const monthlyRewindService = new MonthlyRewindService(
+    rewindRepository,
+    userRepository,
+    skillRepository,
+    logger,
+  );
   const schedulerService = new SchedulerService(
     userRepository,
     taskRepository,
     habitRepository,
     notificationService,
+    morningCompanionService,
+    monthlyRewindService,
     eventBus,
     env,
     logger,
@@ -116,6 +149,7 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
       subscriptions: subscriptionRepository,
       skills: skillRepository,
       leaderboard: leaderboardRepository,
+      rewind: rewindRepository,
     },
     services: {
       auth: authService,
@@ -123,6 +157,8 @@ export function createContainer(env: Env, logger: Logger): AppContainer {
       tasks: taskService,
       reflection: reflectionService,
       notifications: notificationService,
+      morningCompanion: morningCompanionService,
+      monthlyRewind: monthlyRewindService,
       scheduler: schedulerService,
       gamification: gamificationService,
       achievements: achievementService,

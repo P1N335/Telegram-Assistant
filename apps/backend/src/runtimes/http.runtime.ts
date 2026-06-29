@@ -48,7 +48,13 @@ export async function startHttpRuntime(c: AppContainer): Promise<() => Promise<v
   app.use(
     "/api/home",
     auth,
-    createHomeController(c.services.users, c.services.tasks, c.services.pet, c.services.entitlements),
+    createHomeController(
+      c.services.users,
+      c.services.tasks,
+      c.services.pet,
+      c.services.habits,
+      c.services.entitlements,
+    ),
   );
 
   // Admin (защита по x-admin-token внутри; выключено, если ADMIN_TOKEN не задан)

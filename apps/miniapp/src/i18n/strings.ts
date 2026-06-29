@@ -49,6 +49,12 @@ const ru = {
   "home.tasksEmpty": "Пока пусто. Добавь задачи ниже 👇",
   "home.planPlaceholder": "Новый план — по задаче на строку:\nЗакончить диплом\nСходить в зал",
   "home.addToPlan": "Добавить в план",
+  "home.allDoneBanner": "Всё на сегодня закрыто — задачи и привычки 🎉",
+
+  "celebrate.levelUp.title": "Новый уровень!",
+  "celebrate.levelUp.subtitle": "Уровень {level}",
+  "celebrate.allDone.title": "День закрыт!",
+  "celebrate.allDone.subtitle": "Все задачи и привычки на сегодня выполнены",
 
   "chip.level": "Уровень {level}",
   "chip.xp": "{xp} XP",
@@ -200,6 +206,12 @@ const en: Record<TranslationKey, string> = {
   "home.tasksEmpty": "Nothing yet. Add tasks below 👇",
   "home.planPlaceholder": "New plan — one task per line:\nFinish the thesis\nGo to the gym",
   "home.addToPlan": "Add to plan",
+  "home.allDoneBanner": "All done for today — tasks and habits 🎉",
+
+  "celebrate.levelUp.title": "Level up!",
+  "celebrate.levelUp.subtitle": "Level {level}",
+  "celebrate.allDone.title": "Day complete!",
+  "celebrate.allDone.subtitle": "All tasks and habits for today are done",
 
   "chip.level": "Level {level}",
   "chip.xp": "{xp} XP",

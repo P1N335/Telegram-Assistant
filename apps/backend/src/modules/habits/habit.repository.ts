@@ -25,13 +25,32 @@ export interface UpdateHabitData {
 
 export type HabitWithUser = Habit & { user: { telegramId: bigint; timezone: string } };
 
+/**
+ * Окно выборки привычек по локальному времени дня (для напоминаний). Каждое окно
+ * связывает группу таймзон с инклюзивным диапазоном `timeOfDay` ["HH:MM".."HH:MM"].
+ * Таймзоны с одинаковым текущим локальным временем делят одно окно (меньше запросов).
+ */
+export interface HabitDueWindow {
+  timezones: string[];
+  gte: string;
+  lte: string;
+}
+
 export interface IHabitRepository {
   create(userId: string, data: CreateHabitData): Promise<Habit>;
   update(id: string, data: UpdateHabitData): Promise<Habit>;
   findById(id: string): Promise<Habit | null>;
   listActiveByUser(userId: string): Promise<Habit[]>;
-  /** Все активные привычки с данными пользователя — для планировщика. */
-  listAllActiveWithUser(): Promise<HabitWithUser[]>;
+  /**
+   * Активные привычки, чьё `timeOfDay` попадает в окно своей таймзоны — для
+   * напоминаний. Оконный предфильтр вместо скана всех привычек (масштаб 100k+).
+   */
+  listActiveDueInWindows(windows: HabitDueWindow[]): Promise<HabitWithUser[]>;
+  /**
+   * Активные привычки пользователей из указанных таймзон — для ночного роллловера
+   * (берём только таймзоны, где сейчас локальная полночь), без скана всей таблицы.
+   */
+  listActiveByTimezones(timezones: string[]): Promise<HabitWithUser[]>;
   delete(id: string): Promise<void>;
 
   /** Создаёт отметку выполнения; false, если уже была (идемпотентность по дню). */

@@ -5,15 +5,19 @@ import { type AuthedRequest, requireUserId } from "./auth.middleware.js";
 import { UserService } from "../../modules/users/user.service.js";
 import type { TaskService } from "../../modules/tasks/task.service.js";
 import type { PetService } from "../../modules/pet/pet.service.js";
+import type { HabitService } from "../../modules/habits/habit.service.js";
 import type { EntitlementService } from "../../modules/subscription/entitlement.service.js";
+import { computeDailyCompletion } from "./daily-completion.js";
 
 /**
- * Фасад главного экрана Mini App: профиль + статистика + задачи + питомец + премиум-статус.
+ * Фасад главного экрана Mini App: профиль + статистика + задачи + привычки + питомец +
+ * премиум-статус + сводка выполнения дня (источник UI-события «всё закрыто»).
  */
 export function createHomeController(
   userService: UserService,
   taskService: TaskService,
   petService: PetService,
+  habitService: HabitService,
   entitlements: EntitlementService,
 ): Router {
   const router = Router();
@@ -22,10 +26,11 @@ export function createHomeController(
     "/",
     asyncHandler(async (req: AuthedRequest, res) => {
       const userId = requireUserId(req);
-      const [user, stats, tasks, pet, premium] = await Promise.all([
+      const [user, stats, tasks, habits, pet, premium] = await Promise.all([
         userService.getById(userId),
         userService.getStatistics(userId),
         taskService.listForDay(userId),
+        habitService.listForToday(userId),
         petService.getView(userId),
         entitlements.getStatus(userId),
       ]);
@@ -35,6 +40,7 @@ export function createHomeController(
         tasks,
         pet,
         premium,
+        daily: computeDailyCompletion(tasks, habits),
       };
       res.json(body);
     }),

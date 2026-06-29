@@ -56,4 +56,11 @@ export class PrismaUserRepository implements IUserRepository {
       where: { isActive: true, [hourField]: { not: null } },
     });
   }
+
+  findActiveByTimezones(timezones: string[]): Promise<User[]> {
+    if (timezones.length === 0) return Promise.resolve([]);
+    return this.prisma.user.findMany({
+      where: { isActive: true, timezone: { in: timezones } },
+    });
+  }
 }

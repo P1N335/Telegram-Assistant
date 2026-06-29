@@ -272,12 +272,54 @@ export interface LeaderboardResponse {
   offset: number;
 }
 
+// ── Месячный ревайнд ──────────────────────────────────────────
+// Агрегированный отчёт за прошедший месяц (выполнено задач/привычек, стрик, рост
+// скиллов). Доставляется ботом в начале месяца через планировщик (идемпотентно по
+// dedupeKey). Бесплатная фича. DTO держим в @tpc/shared — переиспользуемо, если позже
+// появится экран ревайнда в Mini App; сейчас рендерится в текст бота.
+
+/** Скилл месяца: набранный за месяц XP + текущий уровень (после роста). */
+export interface RewindSkillDto {
+  code: string;
+  name: string;
+  icon: string | null;
+  level: number; // текущий уровень скилла на момент отчёта
+  xpGained: number; // XP, начисленный скиллу за отчётный месяц
+}
+
+/** Отчёт за один календарный месяц пользователя. */
+export interface MonthlyRewindDto {
+  month: string; // отчётный месяц "YYYY-MM" (в таймзоне пользователя)
+  tasksCompleted: number; // задач выполнено за месяц
+  habitsCompleted: number; // отметок привычек за месяц
+  currentStreak: number; // текущая серия (снимок на момент отчёта)
+  longestStreak: number; // рекорд серии
+  topSkills: RewindSkillDto[]; // топ скиллов по росту за месяц (REWIND_TOP_SKILLS)
+  totalSkillXpGained: number; // суммарный рост XP по всем скиллам за месяц
+}
+
+// ── Сводка выполнения дня ──────────────────────────────────────
+// Производные счётчики (задачи + привычки на сегодня) для главного экрана.
+// Источник UI-события «всё на сегодня закрыто»: фронт сравнивает allDone между
+// обновлениями Home и показывает празднование при переходе false→true. Чисто
+// вычисляемое поле (без записи в БД), поэтому схема Prisma не затрагивается.
+
+export interface DailyCompletionDto {
+  tasksTotal: number; // дневных задач на сегодня
+  tasksDone: number; // из них со статусом COMPLETED
+  habitsTotal: number; // привычек, запланированных на сегодня (dueToday)
+  habitsDone: number; // из них отмеченных сегодня
+  /** Есть хотя бы один пункт и все они закрыты (зеркало семантики «идеального дня»). */
+  allDone: boolean;
+}
+
 export interface HomeResponse {
   user: UserDto;
   statistics: StatisticsDto;
   tasks: TaskDto[];
   pet: PetDto;
   premium: PremiumStatusDto;
+  daily: DailyCompletionDto;
 }
 
 export interface ApiErrorResponse {

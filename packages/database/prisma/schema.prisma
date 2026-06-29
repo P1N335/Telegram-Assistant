@@ -65,6 +65,7 @@ enum NotificationType {
   HABIT_REMINDER
   STREAK_WARNING
   ACHIEVEMENT_UNLOCKED
+  MONTHLY_REWIND
   CUSTOM
 }
 
@@ -203,6 +204,9 @@ model Habit {
   completions HabitCompletion[]
 
   @@index([userId, isActive])
+  // Оконная выборка напоминаний: range-скан по локальному времени дня (timeOfDay)
+  // среди активных привычек вместо полного скана таблицы под 100k+ пользователей.
+  @@index([isActive, timeOfDay])
 }
 
 // Отметка выполнения привычки за конкретный локальный день (одна на день).

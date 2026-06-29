@@ -10,10 +10,12 @@ import type { AppContainer } from "../shared/di/container.js";
 export async function startSchedulerRuntime(c: AppContainer): Promise<() => Promise<void>> {
   const log = c.logger.child({ runtime: "scheduler" });
 
-  // Утро/вечер + ночной штраф привычек — раз в час.
+  // Утро/вечер + ночной штраф привычек + месячный ревайнд — раз в час.
+  // runMonthlyRewind сам гейтит себя на локальную полночь 1-го числа (дёшево на холостых тиках).
   const digestTask: ScheduledTask = cron.schedule("0 * * * *", () => {
     void c.services.scheduler.tick().catch((err) => log.error({ err }, "Ошибка тика дайджеста"));
     void c.services.scheduler.runHabitRollover().catch((err) => log.error({ err }, "Ошибка роллловера привычек"));
+    void c.services.scheduler.runMonthlyRewind().catch((err) => log.error({ err }, "Ошибка месячного ревайнда"));
   });
 
   // Напоминания о дедлайнах задач и привычках — раз в 5 минут.

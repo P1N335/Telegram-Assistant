@@ -1,5 +1,17 @@
-import type { PetDto, StatisticsDto, TaskDto } from "@tpc/shared";
+import type { MonthlyRewindDto, PetDto, StatisticsDto, TaskDto } from "@tpc/shared";
 import { TaskStatus } from "@tpc/shared";
+
+const MONTH_NAMES_RU = [
+  "январь", "февраль", "март", "апрель", "май", "июнь",
+  "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь",
+];
+
+/** "YYYY-MM" → «Июнь 2026» (для заголовка ревайнда). */
+function monthTitleRu(month: string): string {
+  const [y, m] = month.split("-").map(Number) as [number, number];
+  const name = MONTH_NAMES_RU[(m - 1) % 12] ?? month;
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${y}`;
+}
 
 const STATUS_EMOJI: Record<string, string> = {
   PENDING: "⬜️",
@@ -34,6 +46,10 @@ export const TEXT = {
   morning:
     "Доброе утро! ☀️\n\nКакие задачи на сегодня? Просто перечисли их сообщением — каждую с новой строки.",
 
+  // CTA-хвост, который добавляется к AI-мотивации (когда AI-утро включено): сам призыв
+  // спланировать день без дублирующего приветствия (приветствие даёт LLM).
+  morningCta: "Какие задачи на сегодня? Просто перечисли их сообщением — каждую с новой строки. 🎯",
+
   evening: "Как прошёл день? 🌙\nДавай подведём итоги — это займёт минуту.",
 
   planSaved: (tasks: TaskDto[]) =>
@@ -64,6 +80,26 @@ export const TEXT = {
     `😊 Настроение: ${p.mood}%\n` +
     `⚡️ Энергия: ${p.energy}%\n\n` +
     "Выполняй задачи и заполняй отчёты — питомец растёт вместе с тобой 🐾",
+
+  rewind: (r: MonthlyRewindDto) => {
+    const lines = [
+      `📅 Итоги месяца — ${monthTitleRu(r.month)}`,
+      "",
+      `✅ Выполнено задач: ${r.tasksCompleted}`,
+      `🔁 Отметок привычек: ${r.habitsCompleted}`,
+      `🔥 Серия: ${r.currentStreak} ${plural(r.currentStreak, "день", "дня", "дней")} (рекорд ${r.longestStreak})`,
+    ];
+
+    if (r.topSkills.length) {
+      lines.push("", "📈 Рост скиллов:");
+      for (const s of r.topSkills) {
+        lines.push(`${s.icon ? `${s.icon} ` : ""}${s.name}: +${s.xpGained} XP (ур. ${s.level})`);
+      }
+    }
+
+    lines.push("", "Новый месяц — новый разгон. Спланируй его в приложении 🚀");
+    return lines.join("\n");
+  },
 
   reflection: {
     questions: [

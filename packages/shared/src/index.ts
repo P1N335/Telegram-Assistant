@@ -18,3 +18,4 @@ export * from "./config/xp.js";
 export * from "./config/premium.js";
 export * from "./config/pet.js";
 export * from "./config/i18n.js";
+export * from "./config/rewind.js";
